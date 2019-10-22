@@ -1,0 +1,46 @@
+Source: snaprfs
+Priority: extra
+Maintainer: R. Douglas Barbieri <doug@dooglio.net>
+Build-Depends: cmake,
+    cppthread-dev (>= 1.0.0.0~xenial),
+    debhelper,
+    doxygen,
+    graphviz,
+    eventdispatcher-dev (>= 1.0.4.0~xenial),
+    libadvgetopt-dev (>= 2.0.4.0~xenial),
+    libboost-dev,
+    libexcept-dev (>= 1.1.4.0~xenial),
+    libutf8-dev (>= 1.0.6.0~xenial),
+    snapcatch2 (>= 2.9.1.0~xenial),
+    snapcmakemodules (>= 1.0.49.0~xenial),
+    snapdev (>= 1.1.3.0~xenial),
+    snaplogger (>= 1.0.6.0~xenial)
+Standards-Version: 3.9.4
+Section: libs
+Homepage: https://snapwebsites.org/
+Vcs-Git: https://github.com/m2osw/snapcpp.git
+Vcs-Browser: https://github.com/m2osw/snaprfs
+
+Package: snaprfs-dev
+Section: libdevel
+Architecture: any
+Depends: snaprfs (= ${binary:Version}), ${misc:Depends}
+Description: Development package for the snaprfs service.
+ This library provides functions to share files on remote computers.
+
+Package: snaprfs-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Description: Documentation for the snaprfs service and library.
+ The snaprfs system provides ways to duplicate files between computers.
+
+Package: snaprfs
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: C++ library for easy logging.
+ This service and command line tools provides functions to duplicate files
+ between computers, handle memory caches, and more.
+
+# vim: ts=4 sw=4 et
