@@ -3,34 +3,35 @@
 # Sample script to run make without having to retype the long path each time
 # This will work if you built the environment using our ~/bin/build-snap script
 
-PROCESSORS=4
+PROCESSORS=`nproc`
+PROJECT_PATH=../../BUILD/contrib/snaprfs
 
 case $1 in
 "-l")
-	make -C ../../../BUILD/contrib/snaprfs 2>&1 | less -SR
+	make -C ${PROJECT_PATH} 2>&1 | less -SR
 	;;
 
 "-d")
-	rm -rf ../../../BUILD/contrib/snaprfs/doc/snaprfs-doc-1.0.tar.gz
-	make -C ../../../BUILD/contrib/snaprfs
+	rm -rf ${PROJECT_PATH}/doc/snaprfs-doc-1.0.tar.gz
+	make -C ${PROJECT_PATH}
 	;;
 
 "-i")
-	make -j${PROCESSORS} -C ../../../BUILD/contrib/snaprfs install
+	make -j${PROCESSORS} -C ${PROJECT_PATH} install
 	;;
 
 "-t")
 	(
-		if make -j${PROCESSORS} -C ../../../BUILD/contrib/snaprfs
+		if make -j${PROCESSORS} -C ${PROJECT_PATH}
 		then
 			shift
-			../../../BUILD/contrib/snaprfs/tests/unittest --progress $*
+			${PROJECT_PATH}/tests/unittest --progress $*
 		fi
 	) 2>&1 | less -SR
 	;;
 
 "")
-	make -j${PROCESSORS} -C ../../../BUILD/contrib/snaprfs
+	make -j${PROCESSORS} -C ${PROJECT_PATH}
 	;;
 
 *)

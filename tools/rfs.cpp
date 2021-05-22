@@ -338,7 +338,6 @@ std::cerr << "---[" << user_mode << "]---\n";
                       << std::endl;
             return 1;
         }
-        f_order->set_source(f_opts.get_string("--", 1));
         c.send_order(f_order);
         break;
 
@@ -415,11 +414,11 @@ std::cerr << "---[" << user_mode << "]---\n";
         break;
 
     case mode_t::MODE_ONE_SOURCE_MANY_DESTINATIONS:
-        if(max != 3)
+        if(max < 3)
         {
             std::cerr << "error: command \""
                       << command
-                      << "\" expects exactly one <source> and one <destination>."
+                      << "\" expects exactly one <source> and one or more <destinations>."
                       << std::endl;
             return 1;
         }
@@ -432,11 +431,11 @@ std::cerr << "---[" << user_mode << "]---\n";
         break;
 
     case mode_t::MODE_MANY_SOURCES_ONE_DESTINATION:
-        if(max != 3)
+        if(max < 3)
         {
             std::cerr << "error: command \""
                       << command
-                      << "\" expects many <sources> and at least one <destination>."
+                      << "\" expects one or more <sources> and at least one <destination>."
                       << std::endl;
             return 1;
         }

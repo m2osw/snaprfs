@@ -1,8 +1,8 @@
 
 # Dependencies
 
-* aptget -- add support for `??-<name>.conf`
-* eventdispatcher -- events for file changes (files are created, deleted, etc.)
+* snapcommunicator in eventdispatcher (probably renamed just communicator
+  or maybe use a different much shorter name such as hubd--hub deamon)
 
 # Core Implementation (SNAP-658)
 
@@ -16,7 +16,7 @@
 * Replicate files from any computer to any other (i.e. keep latest)
 * Create binary packages
 * Support to keep files in memory (i.e. cache)
-* `rfscp` to in part test that the copy works
+* `rfs cp|list|version|...` to in part test that the copy works
 
 # Bonuses
 
@@ -25,4 +25,6 @@
 * REST API (Requirement: HTTPD implementation in eventdispatcher SNAP-695)
 * Global settings (duplicate 80-<name>.conf files; dependency advgetopt,
   see SNAP-690)
+* Implement a set of system defaults such as copying the /var/crash from any
+  computer to one "central" computer and the /var/log too.
 

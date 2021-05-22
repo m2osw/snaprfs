@@ -52,6 +52,7 @@ namespace detail
 class connection_impl
 {
 public:
+                                                    connection_impl();
 
     void                                            set_snaprfs_host(std::string const & host);
     ed::tcp_client_message_connection::pointer_t    get_connection();
@@ -61,6 +62,12 @@ private:
     addr::addr                                      f_addr = addr::addr();
     ed::tcp_client_message_connection::pointer_t    f_connection = ed::tcp_client_message_connection::pointer_t();
 };
+
+
+connection_impl::connection_impl()
+{
+    set_snaprfs_host(std::string());
+}
 
 
 void connection_impl::set_snaprfs_host(std::string const & host)

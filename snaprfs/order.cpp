@@ -91,6 +91,12 @@ void order::add_flag(order_flag_t flag)
 }
 
 
+void order::remove_flag(order_flag_t flag)
+{
+    f_flags.erase(flag);
+}
+
+
 void order::add_flags(std::string const & flags)
 {
     std::vector<std::string>    names;
