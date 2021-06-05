@@ -182,7 +182,11 @@ tools::tools(int argc, char * argv[])
 
     f_opts.finish_parsing(argc, argv);
 
-    snaplogger::process_logger_options(f_opts, "/etc/snaplogger");
+    if(!snaplogger::process_logger_options(f_opts, "/etc/snaplogger"))
+    {
+        // exit on any error
+        throw advgetopt::getopt_exit("logger options generated an error.", 0);
+    }
 }
 
 
