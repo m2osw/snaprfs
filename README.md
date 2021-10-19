@@ -118,7 +118,7 @@ The following are the main features of this file system:
 
     The second location allows us to have any number of configuration files.
     Particularly, it allows us to insert additional entries from different
-    sources. One of those sources will ne the `snaprfs` tool which will
+    sources. One of those sources will be the `snaprfs` tool which will
     handle files with priority 80 (i.e. `80-<name>.conf`). These files
     are viewed as the global setup.
     
