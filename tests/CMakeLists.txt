@@ -1,4 +1,4 @@
-# Copyright (c) 2019  Made to Order Software Corp.  All Rights Reserved
+# Copyright (c) 2019-2022  Made to Order Software Corp.  All Rights Reserved
 #
 # https://snapwebsites.org/project/snaprfs
 # contact@m2osw.com
@@ -23,38 +23,36 @@
 ##
 project(unittest)
 
-find_package( Catch2 )
+find_package(SnapCatch2)
 
-if( Catch2_FOUND )
+if(SnapCatch2_FOUND)
 
-    add_definitions(
-        -DCATCH_CONFIG_PREFIX_ALL
-    )
-
-    include_directories(
-        ${CMAKE_BINARY_DIR}
-        ${PROJECT_SOURCE_DIR}
-        ${CATCH_INCLUDE_DIR}
-        ${LIBEXCEPT_INCLUDE_DIRS}
-        ${LIBUTF8_INCLUDE_DIRS}
-    )
-
-    add_executable( ${PROJECT_NAME}
+    add_executable(${PROJECT_NAME}
         main.cpp
 
         version.cpp
     )
 
-    target_link_libraries( ${PROJECT_NAME}
+    target_include_directories(${PROJECT_NAME}
+        PUBLIC
+            ${CMAKE_BINARY_DIR}
+            ${PROJECT_SOURCE_DIR}
+            ${SNAPCATCH2_INCLUDE_DIRS}
+            ${LIBEXCEPT_INCLUDE_DIRS}
+            ${LIBUTF8_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(${PROJECT_NAME}
         snaprfs
+        ${SNAPCATCH2_LIBRARIES}
     )
 
     add_test( unittests ${PROJECT_NAME} )
 
-else( Catch2_FOUND )
+else(SnapCatch2_FOUND)
 
     message("snapcatch2 not found... no test will be built.")
 
-endif( Catch2_FOUND )
+endif(SnapCatch2_FOUND)
 
 # vim: ts=4 sw=4 et
