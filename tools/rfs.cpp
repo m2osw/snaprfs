@@ -28,7 +28,6 @@
 //
 #include    <advgetopt/advgetopt.h>
 #include    <advgetopt/exception.h>
-#include    <advgetopt/log.h>
 #include    <advgetopt/options.h>
 #include    <advgetopt/utils.h>
 
@@ -124,9 +123,12 @@ constexpr char const * const g_configuration_directories[] = {
 advgetopt::options_environment const g_options_environment =
 {
     .f_project_name = "snaprfs",
+    .f_group_name = nullptr,
     .f_options = g_options,
     .f_options_files_directory = nullptr,
     .f_environment_variable_name = "RFS_OPTIONS",
+    .f_environment_variable_intro = nullptr,
+    .f_section_variables_name = nullptr,
     .f_configuration_files = nullptr,
     .f_configuration_filename = "rfs.conf",
     .f_configuration_directories = g_configuration_directories,
@@ -136,7 +138,7 @@ advgetopt::options_environment const g_options_environment =
     .f_help_footer = "%c",
     .f_version = SNAPRFS_VERSION_STRING,
     .f_license = "GNU GPL v2",
-    .f_copyright = "Copyright (c) 2013-"
+    .f_copyright = "Copyright (c) 2020-"
                    BOOST_PP_STRINGIZE(UTC_BUILD_YEAR)
                    " by Made to Order Software Corporation -- All Rights Reserved",
     .f_build_date = UTC_BUILD_DATE,
@@ -470,7 +472,7 @@ int main(int argc, char * argv[])
         tools command(argc, argv);
         return command.run();
     }
-    catch(advgetopt::getopt_exception_exit const &)
+    catch(advgetopt::getopt_exit const &)
     {
         return 1;
     }

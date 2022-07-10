@@ -62,6 +62,7 @@ public:
     std::string             get_destination() const;
 
     void                    add_flag(order_flag_t flag);
+    void                    remove_flag(order_flag_t flag);
     void                    add_flags(std::string const & flags);
     order_flag_set_t        get_flags() const;
     std::string             flags_as_string() const;

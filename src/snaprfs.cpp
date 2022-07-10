@@ -57,7 +57,6 @@
 //
 #include    <advgetopt/advgetopt.h>
 #include    <advgetopt/exception.h>
-#include    <advgetopt/log.h>
 #include    <advgetopt/options.h>
 #include    <advgetopt/utils.h>
 
@@ -84,7 +83,7 @@ namespace
 
 
 
-advgetopt::option const g_options[] =
+advgetopt::option const g_command_line_options[] =
 {
     // COMMANDS
     //
@@ -141,9 +140,12 @@ advgetopt::group_description const g_group_descriptions[] =
 advgetopt::options_environment const g_options_environment =
 {
     .f_project_name = "snaprfs",
-    .f_options = g_options,
+    .f_group_name = nullptr,
+    .f_options = g_command_line_options,
     .f_options_files_directory = nullptr,
     .f_environment_variable_name = "SNAPRFS",
+    .f_environment_variable_intro = nullptr,
+    .f_section_variables_name = nullptr,
     .f_configuration_files = nullptr,
     .f_configuration_filename = "snaprfs.conf",
     .f_configuration_directories = g_configuration_directories,
@@ -153,7 +155,7 @@ advgetopt::options_environment const g_options_environment =
     .f_help_footer = "%c",
     .f_version = SNAPRFS_VERSION_STRING,
     .f_license = "GNU GPL v2",
-    .f_copyright = "Copyright (c) "
+    .f_copyright = "Copyright (c) 2020-"
                    BOOST_PP_STRINGIZE(UTC_BUILD_YEAR)
                    " by Made to Order Software Corporation -- All Rights Reserved",
     .f_build_date = UTC_BUILD_DATE,
@@ -213,7 +215,7 @@ int main(int argc, char * argv[])
         rfs.run();
         return 0;
     }
-    catch(advgetopt::getopt_exception_exit const &)
+    catch(advgetopt::getopt_exit const &)
     {
         return 0;
     }

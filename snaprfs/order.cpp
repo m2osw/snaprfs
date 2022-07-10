@@ -103,7 +103,7 @@ void order::add_flags(std::string const & flags)
 
     // break input in a list of flag name that was separated by commas
     //
-    snap::tokenize_string(
+    snapdev::tokenize_string(
           names
         , flags
         , ", "

@@ -80,9 +80,7 @@ ed::tcp_client_message_connection::pointer_t connection_impl::get_connection()
 {
     if(f_connection == nullptr)
     {
-        f_connection = std::make_shared<ed::tcp_client_message_connection>(
-                f_addr.to_ipv4or6_string(addr::addr::string_ip_t::STRING_IP_BRACKETS)
-              , f_addr.get_port());
+        f_connection = std::make_shared<ed::tcp_client_message_connection>(f_addr);
     }
 
     return f_connection;
