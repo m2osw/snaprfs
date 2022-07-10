@@ -23,7 +23,7 @@ project(snaprfs_conf)
 
 # Installed by debian/* files to standard /etc/snaprfs
 #install(
-#    FILES 
+#    FILES
 #        snaprfs.conf
 #
 #    DESTINATION
