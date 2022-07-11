@@ -15,7 +15,7 @@ Build-Depends: cmake,
     snapcatch2 (>= 2.9.1.0~bionic),
     snapcmakemodules (>= 1.0.49.0~bionic),
     snapdev (>= 1.1.3.0~bionic),
-    snaplogger (>= 1.0.6.0~bionic)
+    snaplogger-dev (>= 1.0.6.0~bionic)
 Standards-Version: 3.9.4
 Section: libs
 Homepage: https://snapwebsites.org/
