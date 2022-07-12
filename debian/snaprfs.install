@@ -1,4 +1,3 @@
 usr/lib/lib*.so.*
-usr/bin/shredlog                    usr/bin/
-conf/severity.ini                   etc/snaprfs/
-conf/shredlog.conf                  etc/snaprfs/
+usr/bin/rfs                         usr/bin/
+conf/snaprfs.conf                   etc/snaprfs/

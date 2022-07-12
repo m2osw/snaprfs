@@ -26,13 +26,13 @@
  * This includes the event dispatcher of the service. The connections are
  * defined in separate files.
  *
- * \li Connection -- listen on TCP port XXXX for event dispatcher messages
+ * \li Connection -- connect using TCP port XXXX for eventdispatcher messages
  * \li Connection -- listen on TCP port XXXX for data transmission (plain)
  * \li Connection -- listen on TCP port XXXX for data transmission (encrypted)
  * \li Connection -- listen on UDP port XXXX for data transmission (plain)
  * \li File -- listen for file changes (create/delete/modify...)
  *
- * The event dispatcher message channel is used to send request to copy
+ * The eventdispatcher message channel is used to send requests to copy
  * files, although many requests are part of configuration files, you can
  * dynamically add a file or a folder using a message.
  *
@@ -40,7 +40,7 @@
  * network.
  *
  * Finally, it is used for various administrative reasons such as sending
- * the LOG message to reload the logger's configuration setup.
+ * the LOG_ROTATE message to reload the logger's configuration setup.
  *
  * The transmission channels are used/selected depending on how the data
  * needs to be transferred. In most cases, we use the UDP channel. If
@@ -59,6 +59,16 @@
 #include    <advgetopt/exception.h>
 #include    <advgetopt/options.h>
 #include    <advgetopt/utils.h>
+
+
+// eventdispatcher
+//
+#include    <eventdispatcher/signal_handler.h>
+
+
+// libexcept
+//
+#include    <libexcept/file_inheritance.h>
 
 
 // snaplogger lib
@@ -209,6 +219,9 @@ std::cerr << "--- TODO: imlement\n";
 
 int main(int argc, char * argv[])
 {
+    ed::signal_handler::create_instance();
+    libexcept::verify_inherited_files();
+
     try
     {
         snaprfs rfs(argc, argv);
