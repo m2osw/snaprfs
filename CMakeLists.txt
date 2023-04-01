@@ -24,6 +24,7 @@ project(snaprfs_project)
 find_package(SnapCMakeModules REQUIRED)
 find_package(AdvGetOpt        REQUIRED)
 find_package(CppThread        REQUIRED)
+find_package(Communicatord    REQUIRED)
 find_package(EventDispatcher  REQUIRED)
 find_package(LibAddr          REQUIRED)
 find_package(LibExcept        REQUIRED)
@@ -41,11 +42,11 @@ include_directories(
 )
 
 add_subdirectory(snaprfs)
-add_subdirectory(src    )
+add_subdirectory(daemon )
+add_subdirectory(tools  )
 add_subdirectory(tests  )
 add_subdirectory(conf   )
 add_subdirectory(doc    )
 add_subdirectory(cmake  )
-add_subdirectory(tools  )
 
 # vim: ts=4 sw=4 et

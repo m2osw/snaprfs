@@ -29,7 +29,7 @@
  */
 
 
-// libexcept lib
+// libexcept
 //
 #include    <libexcept/exception.h>
 
@@ -39,16 +39,12 @@ namespace rfs
 
 
 
-DECLARE_LOGIC_ERROR(rfs_logic_error);
+DECLARE_LOGIC_ERROR(logic_error);
 
-DECLARE_MAIN_EXCEPTION(rfserror);
 DECLARE_MAIN_EXCEPTION(rfs_error);
 
-DECLARE_EXCEPTION(rfs_error, duplicate_error);
-DECLARE_EXCEPTION(rfs_error, invalid_variable);
-DECLARE_EXCEPTION(rfs_error, invalid_parameter);
-DECLARE_EXCEPTION(rfs_error, invalid_severity);
-DECLARE_EXCEPTION(rfs_error, not_a_message);
+DECLARE_EXCEPTION(rfs_error, duplicate_file);
+DECLARE_EXCEPTION(rfs_error, missing_parameter);
 
 
 

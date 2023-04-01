@@ -1,0 +1,329 @@
+.TH RFS 1 "March 2023" "RFS 1.x" "User Commands"
+.SH NAME
+rfs \- Send an RFS command to a snaprfs server
+.SH SYNOPSIS
+.B rfs
+[\fIOPTIONS\fR] \fICOMMAND\fR <param1> <param2> ... <paramN>
+.SH DESCRIPTION
+The \fBrfs(1)\fR tool is used to send orders to the snaprfs service to
+manage the service. In most cases, the snaprfs service works on its own.
+However, at times it can be practical to send a file over to multiple
+computers and the \fBrfs(1)\fR tool can be used for that purpose.
+
+The tool supports the following commands:
+
+.TP
+\fBconfiguration-filenames\fR
+Retrieve a list of the files that are loaded to configure the snaprfs
+process.
+
+.TP
+\fBcp\fR \fISOURCES...\fR \fIDESTINATION\fR
+Copy the list of source files to the destination.
+
+.TP
+\fBdup\fR \fISOURCE\fR \fIDESTINATIONS...\fR
+Copy source to all the specified destinations.
+
+.TP
+\fBlist\fR \fISOURCES...\fR
+Read the list of files accessible from each specified source.
+
+.TP
+\fBmv\fR \fISOURCES...\fR \fIDESTINATION\fR
+Send the list of source files to the destination and remove them from the
+source location on success.
+
+.TP
+\fBping\fR \fISOURCE\fR
+Ping a snaprfs server to make sure it is alive.
+
+.TP
+\fBrm\fR \fIDESTINATIONS...\fR
+Remove (delete, unlink, erase) the specified list of files.
+
+.TP
+\fBstat\fR \fISOURCES...\fR
+Read the status of each source file and get the last modification time,
+permissions, etc.
+
+.TP
+\fBstop\fR \fIDESTINATION\fR
+Stop the specified destination.
+
+.TP
+\fBversion\fR
+Check the version of the known snaprfs servers.
+
+.TP
+\fB--mode\fR \fImode\fR \fB<command>\fR [\fISOURCES...\fR] [\fIDESTINATIONS...\fR]
+The \fB--mode\fR special command can be used to define a user command.
+In most cases, this is only useful when trying to send a command to
+a remote instance which has a newer version than your local instance.
+
+To use this option, you must define the \fB--mode\fR with one of:
+
+.RS
+.IP "0:0"
+\-\- no sources and no destinations are allowed along this command
+.IP "1:0"
+\-\- one source and no destinations are allowed
+.IP "0:1"
+\-\- no sources and one destination are allowed
+.IP "1:1"
+\-\- exactly one source and one destination are allowed
+.IP "1:*"
+\-\- exactly one source and any number of destinations are allowed
+.IP "*:1"
+\-\- any number of sources and exactly one destination are allowed
+.IP "*:0"
+\-\- any number of sources are allowed
+.IP "0:*"
+\-\- any number of destinations are allowed
+.RE
+
+.SH "SECURITY"
+The \fBrfs(1)\fR tool has no security in place. Anyone can send/receive
+files as long as there is a snaprfs service running on their computer.
+It is only expected to be used in a server environment where only
+services and trusted administrator have access to the tool.
+
+.SH "COMMAND LINE OPTIONS"
+A set of command line options are viewed as commands like the above. These
+are described here. For example, the \fI--version\fR command line option
+can be used to check the version of this tool.
+
+.TP
+\fB\-\-build\-date\fR
+Display the date and time when the \fBrfs(1)\fR tool was last built.
+
+.TP
+\fB\-\-command\-help\fR
+List the commands that use a '\-\-' introducer.
+
+The \fBrfs(1)\fR tool understands other commands that are not written
+with the `\-\-' introducer. See the \fBDESCRIPTION\fR section for a
+complete list of these commands.
+
+.TP
+\fB\-\-compiler\-version\fR
+Output the version information of the C++ compiler used to compile the
+`snaprfs' project.
+
+.TP
+\fB\-\-configuration\-filenames\fR
+List the files loaded to configure the \fBrfs(1)\fR tool. These are loaded
+before the command line options get parsed.
+
+.TP
+\fB\-C\fR, \fB\-\-copyright\fR
+Print out the copyright notice of the `iplock' tool.
+
+.TP
+\fB\-\-long\-help\fR
+Print a completely list of all the supported command line options.
+
+.TP
+\fB\-\-environment\-variable\-name\fR
+Print the name of the variable to the console. This variable can be used
+to enter options instead of writing them on the command line or the
+configuration file. Commands are not allowed in the environment variable.
+
+.TP
+\fB\-\-has\-sanitizer\fR
+Print whether this version was compiled with the C++ compiler sanitizer.
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print a brief document about the tool usage, then exit.
+
+.TP
+\fB\-L\fR, \fB\-\-license\fR
+Print out the license of `iplock' and exit.
+
+.TP
+\fB--list-appenders\fR
+List the available appenders as used by the logger.
+
+.TP
+\fB\-\-list\-severities\fR
+List the available severities as used by the logger.
+
+.TP
+\fB\-\-logger\-configuration\-filenames\fR
+List the files that the logger reads to be setup. If no files are found,
+then messages appear in the console by default.
+
+.TP
+\fB\-\-logger\-version\fR
+Print out the version of the Snap! Logger and exit.
+
+.TP
+\fB\-\-mode\fR \fImode\fR \fB<command>\fR [\fISOURCES...\fR] [\fIDESTINATIONS...\fR]
+As described above, the \fB\-\-mode\fR option allows you to define a user
+defined command to send to a service which understands it even if your
+\fBrfs(1)\fR tool does not yet implement that command.
+
+The \fImode\fR value is one of the modes described above. It defines how
+many sources and destinations your command supports.
+
+The \fB<command>\fR value is the user defined command.
+
+The SOURCES... and DESTINATIONS... depend on the mode. You may have zero,
+one, or many of either although you cannot have many of both at the same
+time.
+
+.TP
+\fB\-\-option\-help\fR
+Print the list of options supported by `iplock'.
+
+.TP
+\fB\-\-path\-to\-option\-definitions\fR
+Option definitions can be defined in a .ini file. If it exists, this is the
+path where it can be found.
+
+.TP
+\fB\-\-print\-option\fR \fIname\fR
+This option is useful to debug your command line, environment variable, and
+configuration files by printing the value of the named option. This tells
+you what value the tool or service sees in the end.
+
+.TP
+\fB\-\-show\-option\-sources\fR
+The `advgetopt' library has the ability to trace where each value is
+read from: which file, the command line, the environment variable.
+This option can be used to determine where a value is defined, which once
+in a while is particularly useful.
+
+.TP
+\fB\-\-system\-help\fR
+Show system specific help. By default these help command line options are
+hidden. Most of these are added by libraries that your tool uses, such as
+the logger and the command line parser.
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print the `rfs' version number, then exit.
+
+
+
+.SH "COMMAND LINE FLAGS"
+The following are all the other commands and options supported by
+\fBiplock(8)\fR.
+
+.TP
+\fB\-\-console\fR
+Print the logs out to the console. This overrides the logger configuration
+files. By default, the iplock tool writes to the console if it is a tty.
+
+.TP
+\fB\-\-debug\fR
+Change the logger severity to the `debug' level. This command line option
+changes the level of all the appenders configured for `iplock'.
+
+This is useful to fully debug the \fB\-\-block\fR and \fB\-\-unblock\fR
+command line options. When in this mode, the memory file used to add
+or remove the IPs from the set is printed to the console.
+
+.TP
+\fB\-\-except\-stack\-collect\fR \fIno|yes|simple|complete\fR
+Defines what exceptions are expected to collect from the stack.
+Nearly all our exceptions are expected to stop a process. This command line
+option gives you the ability to define how much information is to be collected
+from the stack trace when that exception occurred. By default, it is set to
+`yes' (which is the synomym of `simple'). With the logger, that exception
+stack information can automatically be logged to your log file. Very useful
+to debug issues in your software running on a remote server.
+
+.TP
+\fB\-f\fR, \fB\-\-force\\fR
+Force the copy to happen even if the destination file already exists and
+is newer than the source.
+
+.TP
+\fB\-\-force\-severity\fR \fIlevel\fR
+Change the logger severity to this specific level. This new level is
+applied to all the defined appenders. The level is changed whether it
+is higher or lower than the current appender's level.
+
+.TP
+\fB\-\-log\-component\fR \fIname\fR...
+Define one or more component name to filter the logs. Only logs with that
+component are output, others are ignored. You can use the `!' (exclamation
+mark) character in front of a name to exclude logs with that component.
+
+.TP
+\fB\-\-log\-config\fR \fIfilename\fR
+Only load this very configuration file to setup the logger.
+
+.TP
+\fB\-\-log\-config\-path\fR \fIpath\fR
+Define a path to search for log configuration files instead of using the
+defaults.
+
+.TP
+\fB\-\-log\-file\fR \fIfilename\fR
+Save the logs in this specific file instead of what is defined in the
+configuration files.
+
+.TP
+\fB\-\-log\-severity\fR \fIlevel\fR
+Change the severity to this level unless the appender already accepts logs
+for a lower level. So for example, an appender setup to output logs with a
+severity level of `error' or higher is affected by the `warning' level.
+An appender setup to output logs with a severity level of `info' does not
+changed when setting this command line option to `warning'.
+
+.TP
+\fB\-\-logger\-hide\-banner\fR
+Request that the logger does not print the banner in the console. This is
+particularly useful for command line tools (opposed to a service). The
+`iplock' tool automatically turns this option on.
+
+.TP
+\fB\-\-logger\-plugin\-paths\fR \fIpath1:path2:...\fR
+This option allows you to change the path(s) to the `snaplogger' plugins. You
+can enter multiple paths by separating them with a colon (:).
+
+.TP
+\fB\-\-logger\-show\-banner\fR
+Request that the logger prints its banner when it starts. This is useful
+if you run a tool from a service and want to make sure the administrator
+knows which version of the tool is being used.
+
+.TP
+\fB\-\-no\-log\fR
+Turn off the logger so nothing gets printed out. This is somewhat similar
+to a quiet or silent option that many Unix tools offer.
+
+.TP
+\fB\-r\fR, \fB\-\-recursive\fR
+Copy files recursively dewscending though directories.
+
+.TP
+\fB\-\-syslog\fR [\fIidentity\fR]
+Send the logs to the system `syslog'. If specified, the `identity' is used
+along each message.
+
+.TP
+\fB\-\-trace\fR
+Change the logger severity to the TRACE level. All appenders accept all the
+logs that they receive.
+
+
+.SH AUTHOR
+Written by Alexis Wilke <alexis@m2osw.com>.
+.SH "REPORTING BUGS"
+Report bugs to <https://github.com/m2osw/iplock/issues>.
+.br
+iplock home page: <https://snapwebsites.org/project/iplock>.
+.SH COPYRIGHT
+Copyright \(co 2019-2023 Made to Order Software Corporation
+.br
+License: GPLv3
+.br
+This is free software: you are free to change and redistribute it.
+.br
+There is NO WARRANTY, to the extent permitted by law.
+.SH "SEE ALSO"
+.BR snaprfs (8)

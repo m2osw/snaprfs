@@ -19,9 +19,9 @@
 #pragma once
 
 
-// snaprfs lib
+// self
 //
-#include    "snaprfs/order.h"
+#include    <snaprfs/order.h>
 
 
 // C++
@@ -38,9 +38,10 @@ namespace rfs
 
 namespace detail
 {
+
 class connection_impl;
-}
-// namespace detail
+
+} // namespace detail
 
 
 class connection

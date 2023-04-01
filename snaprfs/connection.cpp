@@ -24,13 +24,13 @@
 #include    "snaprfs/exception.h"
 
 
-// libaddr lib
+// libaddr
 //
 #include    <libaddr/addr.h>
 #include    <libaddr/addr_parser.h>
 
 
-// eventdispatcher lib
+// eventdispatcher
 //
 #include    <eventdispatcher/message.h>
 #include    <eventdispatcher/tcp_client_message_connection.h>
@@ -91,7 +91,7 @@ void connection_impl::send_order(order::pointer_t o)
 {
     if(o == nullptr)
     {
-        throw rfs_logic_error("the send_order() function cannot be called with a null pointer");
+        throw logic_error("the send_order() function cannot be called with a null pointer");
     }
 
     ed::tcp_client_message_connection::pointer_t connection(get_connection());

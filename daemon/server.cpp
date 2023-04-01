@@ -23,39 +23,50 @@
  *
  * This file implements the RFS Service.
  *
- * This includes the event dispatcher of the service. The connections are
- * defined in separate files.
+ * The service connects to an instance of the communicatord service and
+ * opens at least one port to receive files.
  *
- * \li Connection -- connect using TCP port XXXX for eventdispatcher messages
- * \li Connection -- listen on TCP port XXXX for data transmission (plain)
- * \li Connection -- listen on TCP port XXXX for data transmission (encrypted)
- * \li Connection -- listen on UDP port XXXX for data transmission (plain)
- * \li File -- listen for file changes (create/delete/modify...)
- *
- * The eventdispatcher message channel is used to send requests to copy
+ * The communicatord message channel is used to send requests to copy
  * files, although many requests are part of configuration files, you can
- * dynamically add a file or a folder using a message.
+ * dynamically add a file or a folder using such a message.
  *
  * That channel is also used to communicate with other computers on your
- * network.
+ * network for other reasons:
  *
- * Finally, it is used for various administrative reasons such as sending
+ * \li gather statistics about files
+ * \li get version of each instance of the running snaprfs services
+ * \li make sure * certain snaprfs instances are running
+ * \li etc.
+ *
+ * Finally, it is used for various administrative reasons such as receiving
  * the LOG_ROTATE message to reload the logger's configuration setup.
  *
  * The transmission channels are used/selected depending on how the data
- * needs to be transferred. In most cases, we use the UDP channel. If
- * encryption is necessary, the encrypted TCP channel gets used. At this
- * time I'm not too sure why we'd want to use the plain TCP connection.
+ * is to be transferred. The current implementation supports plain and
+ * encrypted TCP channels. The encryption is used when sending across
+ * clusters. Within one cluster and assuming it is safe to send data
+ * between your computer on a local network, no encryption is used to
+ * make the transfers faster.
+ *
+ * A future version may support UDP in order to be able to broadcast
+ * the files. This is particularly useful if you have many computers
+ * and want to send the files to all the other computers at once.
+ * However, many network on the Internet do not properly support
+ * broadcasting between computers.
  */
 
-// rfs library
+// self
+//
+#include    "server.h"
+
+
+// snaprfs
 //
 #include    <snaprfs/version.h>
 
 
-// advgetopt lib
+// advgetopt
 //
-#include    <advgetopt/advgetopt.h>
 #include    <advgetopt/exception.h>
 #include    <advgetopt/options.h>
 #include    <advgetopt/utils.h>
@@ -71,21 +82,25 @@
 #include    <libexcept/file_inheritance.h>
 
 
-// snaplogger lib
+// snaplogger
 //
 #include    <snaplogger/message.h>
 #include    <snaplogger/options.h>
 
 
-// boost lib
+// snapdev
 //
-#include    <boost/preprocessor/stringize.hpp>
+#include    <snapdev/stringize.h>
 
 
 // last include
 //
 #include    <snapdev/poison.h>
 
+
+
+namespace rfs_daemon
+{
 
 
 namespace
@@ -97,14 +112,6 @@ advgetopt::option const g_command_line_options[] =
 {
     // COMMANDS
     //
-    advgetopt::define_option(
-          advgetopt::Name("detach")
-        , advgetopt::Flags(advgetopt::all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
-                    , advgetopt::GETOPT_FLAG_REQUIRED>())
-        , advgetopt::DefaultValue("false")
-        , advgetopt::Help("whether to work in the background (true) or not (false).")
-    ),
 
     // OPTIONS
     //
@@ -160,13 +167,13 @@ advgetopt::options_environment const g_options_environment =
     .f_configuration_filename = "snaprfs.conf",
     .f_configuration_directories = g_configuration_directories,
     .f_environment_flags = advgetopt::GETOPT_ENVIRONMENT_FLAG_PROCESS_SYSTEM_PARAMETERS,
-    .f_help_header = "Usage: %p [--<opt>] <config-name> ...\n"
+    .f_help_header = "Usage: %p [--<opt>]\n"
                      "where --<opt> is one or more of:",
     .f_help_footer = "%c",
     .f_version = SNAPRFS_VERSION_STRING,
     .f_license = "GNU GPL v2",
     .f_copyright = "Copyright (c) 2020-"
-                   BOOST_PP_STRINGIZE(UTC_BUILD_YEAR)
+                   SNAPDEV_STRINGIZE(UTC_BUILD_YEAR)
                    " by Made to Order Software Corporation -- All Rights Reserved",
     .f_build_date = UTC_BUILD_DATE,
     .f_build_time = UTC_BUILD_TIME,
@@ -175,22 +182,11 @@ advgetopt::options_environment const g_options_environment =
 #pragma GCC diagnostic pop
 
 
+} // no name namespace
 
 
 
-class snaprfs
-{
-public:
-                                        snaprfs(int argc, char * argv[]);
-
-    void                                run();
-
-private:
-    advgetopt::getopt                   f_opts;
-};
-
-
-snaprfs::snaprfs(int argc, char * argv[])
+server::server(int argc, char * argv[])
     : f_opts(g_options_environment)
 {
     snaplogger::add_logger_options(f_opts);
@@ -200,20 +196,43 @@ snaprfs::snaprfs(int argc, char * argv[])
     if(!snaplogger::process_logger_options(f_opts, "/etc/snaplogger"))
     {
         // exit on any error
-        throw advgetopt::getopt_exit("logger options generated an error.", 0);
+        //
+        throw advgetopt::getopt_exit("logger options generated an error.", 1);
     }
+
+    f_messenger = std::make_shared<messenger>(this, f_opts);
 }
 
 
-void snaprfs::run()
+int server::run()
 {
+
 std::cerr << "--- TODO: imlement\n";
+
+    return f_force_restart ? 1 : 0;
+}
+
+
+void server::restart()
+{
+    f_force_restart = true;
+    stop(false);
+}
+
+
+void server::stop(bool quitting)
+{
+    SNAP_LOG_INFO
+        << (quitting ? "quitting" : "stopping")
+        << " snaprfs service."
+        << SNAP_LOG_SEND;
+
+    f_messenger.reset();
 }
 
 
 
-}
-// no name namespace
+} // namespace rfs_daemon
 
 
 
@@ -224,9 +243,8 @@ int main(int argc, char * argv[])
 
     try
     {
-        snaprfs rfs(argc, argv);
-        rfs.run();
-        return 0;
+        rfs_daemon::server rfs(argc, argv);
+        return rfs.run();
     }
     catch(advgetopt::getopt_exit const &)
     {

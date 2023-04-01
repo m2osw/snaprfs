@@ -1,3 +1,4 @@
 usr/lib/lib*.so.*
 usr/bin/rfs                         usr/bin/
+usr/sbin/snaprfs                    usr/sbin/
 conf/snaprfs.conf                   etc/snaprfs/

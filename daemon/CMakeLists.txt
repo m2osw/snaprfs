@@ -24,7 +24,8 @@
 project(snaprfs_service)
 
 add_executable( ${PROJECT_NAME}
-    snaprfs.cpp
+    messenger.cpp
+    server.cpp
 )
 
 include_directories(
@@ -48,7 +49,7 @@ install(
         ${PROJECT_NAME}
 
     RUNTIME DESTINATION
-        bin
+        sbin
 )
 
 # vim: ts=4 sw=4 et

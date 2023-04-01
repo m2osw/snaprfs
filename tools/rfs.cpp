@@ -54,6 +54,86 @@ namespace
 
 advgetopt::option const g_options[] =
 {
+    // COMMANDS
+    //
+    advgetopt::define_option(
+          advgetopt::Name("configuration-filenames")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("requests the configuration information from snaprfs services.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("duplicate")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("send one file to one or more snaprfs destinations.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("copy")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("send one or more files to a snaprfs destination.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("info")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("retrieve information, such as the hostname and version, of the known snaprfs services.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("list")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("list files managed by the specified snaprfs hosts.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("mode")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("allow the sending of otherwise unknown commands with this specific mode (0, 1, * twice separated by a colon, for example *:1 means many sources to one destination; *:* is not allowed).")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("move")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("send one or more files to a snaprfs destination and remove the sources once done.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("ping")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("send a ping to a snaprfs service to verify that it is alive.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("rm")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("remove one or more files.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("stat")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("get statistics about one or more files on the snaprfs cluster.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("stop")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
+                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
+        , advgetopt::Help("send the STOP command to a snaprfs service.")
+    ),
+
     // OPTIONS
     //
     advgetopt::define_option(
@@ -73,15 +153,8 @@ advgetopt::option const g_options[] =
                     , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
         , advgetopt::Help("copy directories recursively.")
     ),
-    advgetopt::define_option(
-          advgetopt::Name("mode")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS
-                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
-        , advgetopt::Help("allow the sending of otherwise unknown commands with this specific mode (0, 1, * twice separated by a colon, for example *:1 means many sources to one destination; *:* is not allowed).")
-    ),
 
-    // COMMAND + FILENAMES + DESTINATION
+    // COMMAND + SOURCE[S] + DESTINATION[S]
     //
     advgetopt::define_option(
           advgetopt::Name("--")
