@@ -126,7 +126,11 @@ The following are the main features of this file system:
   and it will automatically propagate to all the others through the
   `snaprfs` file duplication mechanism.
 
-  Note: instead, for configurations, we want to use the fluid-settings project.
+  Note: the `fluid-settings` project depends on the snaprfs so it does not
+        make use of it to manage its own settings (unfortunate). In most
+        likelihood, though, the snaprfs setup will remain pretty small.
+        It uses itself to copy the definition files between computers.
+        Those files are used to know what needs to be copied.
 
 * Auto-detect updates
 

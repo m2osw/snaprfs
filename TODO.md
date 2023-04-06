@@ -3,10 +3,12 @@
 
 * Create a library to handle the feat
 * Control connection (using communicatord)
-** The settings (neighbors, etc.) are passed using fluid-settings
+** The settings (neighbors, etc.) are passed using communicatord
+   (note that we cannot use the fluid-settings in this project since
+   fluid-settings depends on this project)
 ** Start file transmission; here is where we send the file metadata
 * TCP data connection (for encrypted transmissions)
-* UDP data connection (for non-encrypted transmissions)
+* UDP data connection (for non-encrypted transmissions in broadcast mode)
 * Always try to compress the file before sharing (unless under X bytes)
 * Copy files from one computer to one or more (i.e. one way)
 * Replicate files from any computer to any other (i.e. keep latest)

@@ -94,10 +94,6 @@ messenger::~messenger()
 void messenger::ready(ed::message & msg)
 {
     snapdev::NOT_USED(msg);
-
-    // send a first gossip message as soon as we are ready
-    //
-    //f_server->send_gossip();
 }
 
 
@@ -705,5 +701,5 @@ void messenger::msg_version(ed::message & msg)
 
 
 
-} // namespace fluid_settings_daemon
+} // namespace rfs_daemon
 // vim: ts=4 sw=4 et

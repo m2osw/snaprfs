@@ -1,0 +1,5 @@
+# SnapRFS Service
+#
+# This file tells the communicatord that the snaprfs is a local
+# service and such a service is going to connect to it
+description=The SnapRFS allows for defining directories that are to be duplicated on various computers on your system.

@@ -115,12 +115,12 @@ advgetopt::option const g_command_line_options[] =
 
     // OPTIONS
     //
-    advgetopt::define_option(
-          advgetopt::Name("standalone")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
-        , advgetopt::Help("do not connect to any remote devices; still useful for local memory cache.")
-    ),
+    //advgetopt::define_option(
+    //      advgetopt::Name("standalone")
+    //    , advgetopt::Flags(advgetopt::standalone_all_flags<
+    //                  advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+    //    , advgetopt::Help("do not connect to any remote devices; still useful for local memory cache.")
+    //),
 
     // END
     //
@@ -188,6 +188,8 @@ advgetopt::options_environment const g_options_environment =
 
 server::server(int argc, char * argv[])
     : f_opts(g_options_environment)
+    , f_communicator(ed::communicator::instance())
+    , f_messenger(std::make_shared<messenger>(this, f_opts))
 {
     snaplogger::add_logger_options(f_opts);
 
@@ -200,14 +202,15 @@ server::server(int argc, char * argv[])
         throw advgetopt::getopt_exit("logger options generated an error.", 1);
     }
 
-    f_messenger = std::make_shared<messenger>(this, f_opts);
+    f_messenger->process_communicatord_options();
 }
 
 
 int server::run()
 {
+std::cerr << "--- TODO: implement\n";
 
-std::cerr << "--- TODO: imlement\n";
+    f_communicator->run();
 
     return f_force_restart ? 1 : 0;
 }
@@ -227,7 +230,7 @@ void server::stop(bool quitting)
         << " snaprfs service."
         << SNAP_LOG_SEND;
 
-    f_messenger.reset();
+    f_messenger->unregister_communicator(quitting);
 }
 
 

@@ -83,6 +83,8 @@ public:
 
 private:
     advgetopt::getopt       f_opts;
+    ed::communicator::pointer_t
+                            f_communicator = ed::communicator::pointer_t();
     messenger::pointer_t    f_messenger = messenger::pointer_t();
     bool                    f_force_restart = false;
 };
