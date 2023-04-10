@@ -42,11 +42,6 @@
 #include    <libaddr/addr_parser.h>
 
 
-// boost
-//
-#include    <boost/preprocessor/stringize.hpp>
-
-
 // last include
 //
 #include    <snapdev/poison.h>

@@ -90,7 +90,13 @@
 
 // snapdev
 //
+#include    <snapdev/pathinfo.h>
 #include    <snapdev/stringize.h>
+
+
+// C
+//
+#include    <sys/random.h>
 
 
 // last include
@@ -115,12 +121,12 @@ advgetopt::option const g_command_line_options[] =
 
     // OPTIONS
     //
-    //advgetopt::define_option(
-    //      advgetopt::Name("standalone")
-    //    , advgetopt::Flags(advgetopt::standalone_all_flags<
-    //                  advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
-    //    , advgetopt::Help("do not connect to any remote devices; still useful for local memory cache.")
-    //),
+    advgetopt::define_option(
+          advgetopt::Name("watch-dirs")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Help("one or more colon (:) separated directory names where configuration files are found.")
+    ),
 
     // END
     //
@@ -182,7 +188,78 @@ advgetopt::options_environment const g_options_environment =
 #pragma GCC diagnostic pop
 
 
+
+class modified_timer
+    : public ed::timer
+{
+public:
+    typedef std::shared_ptr<modified_timer> pointer_t;
+
+                                modified_timer();
+
+private:
+};
+
+
+
 } // no name namespace
+
+
+
+
+
+
+shared_file::shared_file(std::string const & filename)
+    : f_filename(filename)
+{
+    // get a random number for the identifier of this file
+    //
+    getrandom(&f_id, sizeof(f_id), 0);
+}
+
+
+std::string const & shared_file::get_filename() const
+{
+    return f_filename;
+}
+
+
+std::uint32_t shared_file::get_id() const
+{
+    return f_id;
+}
+
+
+void shared_file::set_received()
+{
+    f_received = time(nullptr);
+}
+
+
+snapdev::timespec_ex shared_file::get_received() const
+{
+    return f_received;
+}
+
+
+void shared_file::set_last_updated()
+{
+    f_last_updated = snapdev::timespec_ex::gettime();
+}
+
+
+void shared_file::set_start_sharing()
+{
+    f_start_sharing = snapdev::timespec_ex::gettime();
+}
+
+
+bool shared_file::was_updated() const
+{
+    return f_last_updated > f_start_sharing;
+}
+
+
 
 
 
@@ -203,6 +280,10 @@ server::server(int argc, char * argv[])
     }
 
     f_messenger->process_communicatord_options();
+
+    std::string const watch_dirs(f_opts.get_string("watch-dirs"));
+    f_file_listener = std::make_shared<file_listener>(this, watch_dirs);
+    f_communicator->add_connection(f_file_listener);
 }
 
 
@@ -230,8 +311,71 @@ void server::stop(bool quitting)
         << " snaprfs service."
         << SNAP_LOG_SEND;
 
-    f_messenger->unregister_communicator(quitting);
+    if(f_messenger != nullptr)
+    {
+        f_messenger->unregister_communicator(quitting);
+    }
+
+    if(f_communicator != nullptr)
+    {
+        f_communicator->remove_connection(f_file_listener);
+        f_file_listener.reset();
+    }
 }
+
+
+shared_file::pointer_t server::get_file(std::uint32_t id)
+{
+    auto const & it(f_files.find(id));
+    if(it != f_files.end())
+    {
+        return shared_file::pointer_t();
+    }
+
+    return it->second;
+}
+
+
+void server::updated_file(
+      std::string const & path
+    , std::string const & filename
+    , bool updated)
+{
+    shared_file::pointer_t p;
+
+    std::string fullpath(snapdev::pathinfo::canonicalize(path, filename));
+    auto it(std::find_if(
+          f_files.begin()
+        , f_files.end()
+        , [fullpath](auto const & f)
+        {
+            return f.second->get_filename() == fullpath;
+        }));
+    if(it == f_files.end())
+    {
+        // it does not exist in our list, just prepare it and let other
+        // snaprfs know it was updated
+        //
+        p = std::make_shared<shared_file>(fullpath);
+        f_files[p->get_id()] = p;
+    }
+    else
+    {
+        // it exists, we need to re-send from scratch since the file
+        // changed
+        //
+        p = it->second;
+    }
+    p->set_last_updated();
+
+    if(updated)
+    {
+    }
+    else
+    {
+    }
+}
+
 
 
 

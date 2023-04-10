@@ -3,9 +3,9 @@
 # https://snapwebsites.org/project/snaprfs
 # contact@m2osw.com
 #
-# This program is free software; you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -14,29 +14,30 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ##
-## snaprfs service
+## snaprfs daemon
 ##
-project(snaprfs_service)
+project(snaprfs_daemon)
 
-add_executable( ${PROJECT_NAME}
+add_executable(${PROJECT_NAME}
+    data_receiver.cpp
+    data_sender.cpp
+    data_server.cpp
+    file_listener.cpp
     messenger.cpp
     server.cpp
 )
 
 include_directories(
     ${ADVGETOPT_INCLUDE_DIRS}
-    ${CPPTHREAD_INCLUDE_DIRS}
-    ${LIBEXCEPT_INCLUDE_DIRS}
-    ${LIBUFTF8_INCLUDE_DIRS}
+    ${MURMUR3_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
     snaprfs
+    ${MURMUR3_LIBRARIES}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

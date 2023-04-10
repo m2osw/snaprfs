@@ -18,13 +18,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-// snaprfs lib
+// snaprfs
 //
 #include    <snaprfs/connection.h>
 #include    <snaprfs/version.h>
 
 
-// advgetopt lib
+// advgetopt
 //
 #include    <advgetopt/advgetopt.h>
 #include    <advgetopt/exception.h>
@@ -32,15 +32,15 @@
 #include    <advgetopt/utils.h>
 
 
-// snaplogger lib
+// snaplogger
 //
 #include    <snaplogger/message.h>
 #include    <snaplogger/options.h>
 
 
-// boost lib
+// snapdev
 //
-#include    <boost/preprocessor/stringize.hpp>
+#include    <snapdev/stringize.h>
 
 
 // last include
@@ -212,7 +212,7 @@ advgetopt::options_environment const g_options_environment =
     .f_version = SNAPRFS_VERSION_STRING,
     .f_license = "GNU GPL v2",
     .f_copyright = "Copyright (c) 2020-"
-                   BOOST_PP_STRINGIZE(UTC_BUILD_YEAR)
+                   SNAPDEV_STRINGIZE(UTC_BUILD_YEAR)
                    " by Made to Order Software Corporation -- All Rights Reserved",
     .f_build_date = UTC_BUILD_DATE,
     .f_build_time = UTC_BUILD_TIME,

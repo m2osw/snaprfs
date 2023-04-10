@@ -57,7 +57,13 @@
 
 // self
 //
+#include    "file_listener.h"
 #include    "messenger.h"
+
+
+// eventdispatcher
+//
+#include    <eventdispatcher/file_changed.h>
 
 
 // advgetopt
@@ -71,6 +77,31 @@ namespace rfs_daemon
 
 
 
+class shared_file
+{
+public:
+    typedef std::shared_ptr<shared_file>        pointer_t;
+    typedef std::map<std::uint32_t, pointer_t>  map_t;
+
+                            shared_file(std::string const & filename);
+
+    std::string const &     get_filename() const;
+    std::uint32_t           get_id() const;
+    void                    set_received();
+    snapdev::timespec_ex    get_received() const;
+    void                    set_last_updated();
+    void                    set_start_sharing();
+    bool                    was_updated() const;
+
+private:
+    std::string             f_filename = std::string();
+    std::uint32_t           f_id = 0;
+    snapdev::timespec_ex    f_received = snapdev::timespec_ex();
+    snapdev::timespec_ex    f_last_updated = snapdev::timespec_ex();
+    snapdev::timespec_ex    f_start_sharing = snapdev::timespec_ex();
+};
+
+
 class server
 {
 public:
@@ -81,12 +112,21 @@ public:
     void                    restart();
     void                    stop(bool quitting);
 
+    shared_file::pointer_t  get_file(std::uint32_t id);
+    void                    updated_file(
+                                  std::string const & path
+                                , std::string const & filename
+                                , bool updated);
+
 private:
     advgetopt::getopt       f_opts;
     ed::communicator::pointer_t
                             f_communicator = ed::communicator::pointer_t();
     messenger::pointer_t    f_messenger = messenger::pointer_t();
+    file_listener::pointer_t
+                            f_file_listener = file_listener::pointer_t();
     bool                    f_force_restart = false;
+    shared_file::map_t      f_files = shared_file::map_t();
 };
 
 
