@@ -341,7 +341,7 @@ void server::updated_file(
     , std::string const & filename
     , bool updated)
 {
-    shared_file::pointer_t p;
+    shared_file::pointer_t file;
 
     std::string fullpath(snapdev::pathinfo::canonicalize(path, filename));
     auto it(std::find_if(
@@ -356,26 +356,41 @@ void server::updated_file(
         // it does not exist in our list, just prepare it and let other
         // snaprfs know it was updated
         //
-        p = std::make_shared<shared_file>(fullpath);
-        f_files[p->get_id()] = p;
+        file = std::make_shared<shared_file>(fullpath);
+        f_files[file->get_id()] = file;
     }
     else
     {
         // it exists, we need to re-send from scratch since the file
         // changed
         //
-        p = it->second;
+        file = it->second;
     }
-    p->set_last_updated();
+    file->set_last_updated();
 
     if(updated)
     {
-    }
-    else
-    {
+        // on an update, we start right away, otherwise the timer will
+        // call the start whenever the "last updated" is N seconds in
+        // the past
+        //
+        broadcast_file_changed(file);
     }
 }
 
+
+void server::broadcast_file_changed(shared_file::pointer_t file)
+{
+    // broadcast to others about the fact that file was modified so they
+    // can download the file from us
+    //
+    ed::message msg;
+    msg.set_command("RFS_FILE_UPDATED");
+    msg.set_service("*"); // see communicatord/TODO.md -- how to only broadcast to snaprfs services
+    msg.add_parameter("filename", file->get_filename());
+    msg.add_parameter("id", file->get_id());
+    f_messenger->send_message(msg);
+}
 
 
 

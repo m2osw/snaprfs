@@ -119,6 +119,8 @@ public:
                                 , bool updated);
 
 private:
+    void                    broadcast_file_changed(shared_file::pointer_t file);
+
     advgetopt::getopt       f_opts;
     ed::communicator::pointer_t
                             f_communicator = ed::communicator::pointer_t();
