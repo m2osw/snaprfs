@@ -22,6 +22,8 @@
 //
 #include    "data_sender.h"
 
+#include    "server.h"
+
 
 // snaprfs
 //
@@ -31,17 +33,6 @@
 // snaplogger
 //
 #include    <snaplogger/message.h>
-
-
-// snapdev
-//
-//#include    <snapdev/glob_to_list.h>
-//#include    <snapdev/tokenize_string.h>
-
-
-// C++
-//
-//#include    <list>
 
 
 // last include
@@ -56,14 +47,12 @@ namespace rfs_daemon
 
 
 data_sender::data_sender(
-          std::string const & filename
-        , std::uint32_t id
-        , addr::addr const & address
-        , ed::mode_t mode)
-    : tcp_client_connection(address, mode)
-    , f_filename(filename)
-    , f_id(id)
+          server * s
+        , ed::tcp_bio_client::pointer_t client)
+    : tcp_server_client_connection(client)
+    , f_server(s)
 {
+    set_name("data_sender");
 }
 
 
@@ -96,7 +85,7 @@ bool data_sender::open()
     }
 
     data_header header;
-    header.f_id = f_id;
+    header.f_id = f_file_request.f_id;
 
     f_input.seekg(0, std::ios_base::end);
     header.f_size = f_input.tellg();
@@ -106,6 +95,91 @@ bool data_sender::open()
     f_size = sizeof(header);
 
     return true;
+}
+
+
+void data_sender::process_read()
+{
+    // use RAII to process the next level on exit wherever it happens
+    //
+    class on_exit
+    {
+    public:
+        on_exit(data_sender::pointer_t sender)
+            : f_sender(sender)
+        {
+        }
+
+        ~on_exit()
+        {
+            f_sender->tcp_server_client_connection::process_read();
+        }
+
+    private:
+        data_sender::pointer_t      f_sender;
+    };
+    on_exit raii_on_exit(std::dynamic_pointer_cast<data_sender>(shared_from_this()));
+
+    if(get_socket() == -1)
+    {
+        return;
+    }
+
+    if(f_input.is_open())
+    {
+        SNAP_LOG_ERROR
+            << "the data_sender() input file \""
+            << f_filename
+            << "\" is already opened. It cannot be receiving more data."
+            << SNAP_LOG_SEND;
+        return;
+    }
+
+    int r(0);
+    if(f_received_bytes < sizeof(f_file_request))
+    {
+        r = read(&f_file_request + f_received_bytes, sizeof(f_file_request) - f_received_bytes);
+        if(r == -1)
+        {
+            SNAP_LOG_ERROR
+                << "an I/O error occurred while reading data header."
+                << SNAP_LOG_SEND;
+            process_error();
+            return;
+        }
+        if(r == 0)
+        {
+            return;
+        }
+        f_received_bytes += r;
+        if(f_received_bytes >= sizeof(f_file_request))
+        {
+            if(f_file_request.f_magic[0] != 'F'
+            || f_file_request.f_magic[1] != 'I'
+            || f_file_request.f_magic[2] != 'L'
+            || f_file_request.f_magic[3] != 'E')
+            {
+                SNAP_LOG_ERROR
+                    << "file request magic is not 'FILE'."
+                    << SNAP_LOG_SEND;
+                process_error();
+                return;
+            }
+            shared_file::pointer_t file(f_server->get_file(f_file_request.f_id));
+            if(file == nullptr)
+            {
+                SNAP_LOG_ERROR
+                    << "file with id \""
+                    << f_file_request.f_id
+                    << "\" not found."
+                    << SNAP_LOG_SEND;
+                process_error();
+                return;
+            }
+            f_filename = file->get_filename();
+            open();
+        }
+    }
 }
 
 

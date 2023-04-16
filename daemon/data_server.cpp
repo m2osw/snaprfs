@@ -75,6 +75,7 @@ data_server::data_server(
     , f_server(s)
     , f_communicator(ed::communicator::instance())
 {
+    set_name("data_server");
 }
 
 
@@ -97,13 +98,13 @@ void data_server::process_accept()
         return;
     }
 
-    data_receiver::pointer_t service(std::make_shared<data_receiver>(
+    data_sender::pointer_t service(std::make_shared<data_sender>(
                   f_server
                 , new_client));
     if(!f_communicator->add_connection(service))
     {
         SNAP_LOG_ERROR
-            << "new data_receiver connection could not be added to the ed::communicator."
+            << "new data_sender connection could not be added to the ed::communicator."
             << SNAP_LOG_SEND;
     }
 }

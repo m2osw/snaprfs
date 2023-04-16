@@ -18,10 +18,12 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
+find_package(SnapDoxygen)
+
 ##
 ## Documentation
 ##
-AddDoxygenTarget( snaprfs
+AddDoxygenTarget(snaprfs
     ${SNAPRFS_VERSION_MAJOR}
     ${SNAPRFS_VERSION_MINOR}
     ${SNAPRFS_VERSION_PATCH}

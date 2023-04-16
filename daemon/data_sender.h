@@ -21,7 +21,7 @@
 
 // eventdispatcher
 //
-#include    <eventdispatcher/tcp_client_connection.h>
+#include    <eventdispatcher/tcp_server_client_connection.h>
 
 
 // murmur3
@@ -53,6 +53,13 @@ struct data_header
 };
 
 
+struct file_request
+{
+    std::uint8_t        f_magic[4] = { 'F', 'I', 'L', 'E' };
+    std::uint32_t       f_id = 0;
+};
+
+
 struct data_footer
 {
     std::uint8_t        f_murmur3[murmur3::HASH_SIZE] = {};
@@ -64,28 +71,31 @@ class server;
 
 
 class data_sender
-    : public ed::tcp_client_connection
+    : public ed::tcp_server_client_connection
 {
 public:
     typedef std::shared_ptr<data_sender>    pointer_t;
 
                         data_sender(
-                              std::string const & filename
-                            , std::uint32_t id
-                            , addr::addr const & address
-                            , ed::mode_t mode = ed::mode_t::MODE_PLAIN);
+                              server * s
+                            , ed::tcp_bio_client::pointer_t client);
+                        data_sender(data_sender const &) = delete;
+    data_sender &       operator = (data_sender const &) = delete;
 
     bool                open();
 
     // tcp_client_connection implementation
     //
     virtual void        process_write() override;
+    void                process_read() override;
 
 private:
-    std::string         f_filename = std::string();
-    std::uint32_t       f_id = 0;
+    server *            f_server = nullptr;
     std::ifstream       f_input = std::ifstream();
     murmur3::stream     f_murmur3 = murmur3::stream(DATA_SEED_H1, DATA_SEED_H2);
+    file_request        f_file_request = file_request();
+    std::string         f_filename = std::string();
+    std::size_t         f_received_bytes = 0;
     std::uint8_t        f_buffer[1024 * 4] = {};
     std::size_t         f_size = 0;
     std::size_t         f_position = 0;

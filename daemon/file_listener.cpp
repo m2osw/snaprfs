@@ -25,6 +25,11 @@
 #include    "server.h"
 
 
+// snaprfs
+//
+#include    <snaprfs/exception.h>
+
+
 // advgetopt
 //
 #include    <advgetopt/conf_file.h>
@@ -108,6 +113,15 @@ file_listener::file_listener(server *s, std::string const & watch_dirs)
 
 void file_listener::load_setup(std::string const & dir)
 {
+    if(dir.empty()
+    || dir == "/")
+    {
+        // note that "/" is perfectly valid, we just think that's most
+        // probably in error and do not want to support it in snaprfs
+        //
+        throw rfs::unsupported_file("the root directory (/) and an empty string are not valid paths for the inotify configuration file directory.");
+    }
+
     std::string const pattern(dir + "/*.conf");
     snapdev::glob_to_list<std::list<std::string>> filenames;
     if(!filenames.read_path<
@@ -132,6 +146,16 @@ void file_listener::load_setup(std::string const & dir)
             if(settings->has_parameter(path_name))
             {
                 std::string const path(settings->get_parameter(path_name));
+                if(path.empty()
+                || path == "/")
+                {
+                    SNAP_LOG_RECOVERABLE_ERROR
+                        << "ignoring path \""
+                        << path
+                        << "\" since its mode empty or \"/\" which are not considered valid for inotify."
+                        << SNAP_LOG_SEND;
+                    continue;
+                }
                 path_info new_path_info(path);
                 std::string const mode_name(s + "::mode");
                 if(settings->has_parameter(mode_name))
@@ -198,6 +222,14 @@ void file_listener::load_setup(std::string const & dir)
                         << SNAP_LOG_SEND;
                     continue;
                 }
+            }
+            else
+            {
+                SNAP_LOG_CONFIGURATION
+                    << "ignoring section \""
+                    << s
+                    << "\" since it has no \"path=...\" parameter."
+                    << SNAP_LOG_SEND;
             }
         }
     }

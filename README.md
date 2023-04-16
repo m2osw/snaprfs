@@ -212,6 +212,79 @@ what is used the most, the least, etc. and only cache what is really used
 a lot.
 
 
+# Implementation
+
+## Organization
+
+The following shows how the list of objects are created
+
+    +-----------+
+    |   Server  +-------------+------------------+-------------------+
+    +-----+-----+             |                  |                   |
+          |                   |                  |                   |
+          v                   v                  v                   v
+    +-----------+    +---------------+    +-------------+    +-------------+
+    | Messenger |    | File Listener |    | Data Server |    | Data Sender |
+    +-----------+    +---------------+    +------+------+    +-------------+
+                                                 |
+                                                 v
+                                         +---------------+
+                                         | Data Receiver |
+                                         +---------------+
+
+Process generating a file copy in TCP:
+
+          Objects Involved                         Action
+    -----------------------------------------  --------------
+     server => messenger                        create
+     messenger -> communicatord                 connect
+     server => file_listener                    create
+     server => sender                           create
+    ------------------------ ready --------------------------
+     file_listener => server                    file changed
+     server => messenger                        file changed
+     messenger -> communicatord                 file changed
+     communicatord -> remote_communicatord      file changed
+     remote_communicatord -> remote_messenger   file changed
+     remote_messenger => remote_server          receive_file()
+     remote_server =>remote_receiver            create
+     remote_receiver -> sender                  connect
+    -------------------- receive loop -----------------------
+     sender -> remote_receiver                  send file data
+     remote_receiver => remote_receiver         save file (.part1)
+    ---------------------- end loop -------------------------
+     remote_receiver => remote_receiver         rename file (remove .part1)
+
+
+### Server
+
+The Server is created by the `main()` function and then started with the
+`run()` function.
+
+The constructor creates the Messenger so we can communicate with other
+services immediately.
+
+### Messenger
+
+The Messenger is used to communicate with the `communicatord`. This is used
+to communicate between `snaprfs` instances and also for tools to communicate
+with the `snaprfs` service.
+
+### File Listener
+
+The File Listener is used to _listen_ at various directories for changes
+to files (creation, write, resize, deletion). When a file changes in one
+of these directories, the listener is called with information about the
+file that changed and what happened to the file.
+
+If the file was updated in any way, it gets sent to the other `snaprfs`
+instances.
+
+Note: this connection is created only after the Messenger receives the
+      `READY` message. This does not mean other `snaprfs` services are
+      listening for messages just yet. Synchronization happens _later_
+      with other messages.
+
 # License
 
 The project is covered by the

@@ -32,11 +32,14 @@ add_executable(${PROJECT_NAME}
 
 include_directories(
     ${ADVGETOPT_INCLUDE_DIRS}
+    ${EDHTTP_INCLUDE_DIRS}
     ${MURMUR3_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
     snaprfs
+    ${ADVGETOPT_LIBRARIES}
+    ${EDHTTP_LIBRARIES}
     ${MURMUR3_LIBRARIES}
 )
 

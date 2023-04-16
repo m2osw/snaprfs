@@ -57,6 +57,7 @@
 
 // self
 //
+#include    "data_server.h"
 #include    "file_listener.h"
 #include    "messenger.h"
 
@@ -109,6 +110,7 @@ public:
 
     int                     run();
 
+    void                    ready();
     void                    restart();
     void                    stop(bool quitting);
 
@@ -117,6 +119,10 @@ public:
                                   std::string const & path
                                 , std::string const & filename
                                 , bool updated);
+    void                    receive_file(
+                                  std::string const & filename
+                                , std::uint32_t id
+                                , addr::addr const & address);
 
 private:
     void                    broadcast_file_changed(shared_file::pointer_t file);
@@ -127,6 +133,8 @@ private:
     messenger::pointer_t    f_messenger = messenger::pointer_t();
     file_listener::pointer_t
                             f_file_listener = file_listener::pointer_t();
+    data_server::pointer_t  f_data_server = data_server::pointer_t();
+    data_server::pointer_t  f_secure_data_server = data_server::pointer_t();
     bool                    f_force_restart = false;
     shared_file::map_t      f_files = shared_file::map_t();
 };

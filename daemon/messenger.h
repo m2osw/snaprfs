@@ -69,6 +69,8 @@ public:
     virtual void        restart(ed::message & msg) override;
     virtual void        stop(bool quitting) override;
 
+    void                msg_file_changed(ed::message & msg);
+
     void                msg_configuration_filenames(ed::message & msg);
     void                msg_copy(ed::message & msg);
     void                msg_duplicate(ed::message & msg);

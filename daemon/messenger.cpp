@@ -43,6 +43,11 @@
 #include    <libaddr/addr_parser.h>
 
 
+// snaplogger
+//
+#include    <snaplogger/message.h>
+
+
 // last include
 //
 #include    <snapdev/poison.h>
@@ -66,6 +71,7 @@ messenger::messenger(server * s, advgetopt::getopt & opts)
     set_dispatcher(f_dispatcher);
 
     f_dispatcher->add_matches({
+        DISPATCHER_MATCH("RFS_FILE_CHANGED", &messenger::msg_file_changed),
         DISPATCHER_MATCH("RFS_CONFIGURATION_FILENAMES", &messenger::msg_configuration_filenames),
         DISPATCHER_MATCH("RFS_COPY", &messenger::msg_copy),
         DISPATCHER_MATCH("RFS_DUPLICATE", &messenger::msg_duplicate),
@@ -103,6 +109,37 @@ void messenger::restart(ed::message & msg)
 void messenger::stop(bool quitting)
 {
     f_server->stop(quitting);
+}
+
+
+void messenger::msg_file_changed(ed::message & msg)
+{
+    if(!msg.has_parameter("filename")
+    || !msg.has_parameter("id"))
+    {
+        SNAP_LOG_ERROR
+            << "received RFS_FILE_CHANGED message without a filename and/or an id: \""
+            << msg
+            << "\"."
+            << SNAP_LOG_SEND;
+        return;
+    }
+    std::string const filename(msg.get_parameter("filename"));
+    std::uint32_t const id(msg.get_integer_parameter("id"));
+    std::string const remote_address(msg.get_parameter("my_address"));
+
+    if(filename.empty()
+    || remote_address.empty())
+    {
+        SNAP_LOG_ERROR
+            << "filename and remote_address in the RFS_FILE_CHANGED cannoe be empty."
+            << SNAP_LOG_SEND;
+        return;
+    }
+
+    addr::addr a(addr::string_to_addr(remote_address));
+
+    f_server->receive_file(filename, id, a);
 }
 
 

@@ -1,0 +1,28 @@
+#!/bin/sh -e
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+. /usr/lib/snaplogger/inst/manage-log-dirs
+. /usr/lib/eventdispathcer/inst/manage-tls-keys
+
+if [ "$1" = "purge" ]
+then
+    ENVIRONMENT_NAME=snaprfs
+    PACKAGE_NAME=snaprfs
+
+    # delete the admin configuration file
+    #
+    rm -f /etc/${ENVIRONMENT_NAME}/${ENVIRONMENT_NAME}.d/50-${PACKAGE_NAME}.conf
+
+    # delete the snaprfs log directories
+    #
+    destroy_log_dirs ${ENVIRONMENT_NAME}
+
+    # delete the communicator TLS files
+    #
+    delete_tls_keys ${ENVIRONMENT_NAME} ${PACKAGE_NAME}
+fi
+
+#DEBHELPER#
+
+# vim: ts=4 sw=4 et nocindent

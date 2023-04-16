@@ -1,0 +1,28 @@
+#!/bin/sh -e
+
+#DEBHELPER#
+
+# Source debconf libraries.
+. /usr/share/debconf/confmodule
+. /usr/lib/snaplogger/inst/setup-log-dirs
+. /usr/lib/eventdispathcer/inst/create-tls-keys
+
+
+if [ "$1" = "configure" ]
+then
+    ENVIRONMENT_NAME=snaprfs
+    PACKAGE_NAME=snaprfs
+    USER_NAME=snaprfs
+    GROUP_NAME=snaprfs
+
+    # Create the logfile because the snaprfs user may otherwise have
+    # difficulties with it during logrotate.
+    #
+    setup_log_dirs ${PACKAGE_NAME} ${USER_NAME} ${GROUP_NAME} true
+
+    # Create a public & private key to listen on a port with TLS capabilities
+    #
+    create_tls_keys ${ENVIRONMENT_NAME} ${PACKAGE_NAME} ${USER_NAME} ${GROUP_NAME}
+fi
+
+# vim: ts=4 sw=4 et

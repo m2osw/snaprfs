@@ -25,20 +25,15 @@
 #include    "server.h"
 
 
+
+// snaprfs
+//
+#include    <snaprfs/exception.h>
+
+
 // snaplogger
 //
 #include    <snaplogger/message.h>
-
-
-// snapdev
-//
-//#include    <snapdev/glob_to_list.h>
-//#include    <snapdev/tokenize_string.h>
-
-
-// C++
-//
-//#include    <list>
 
 
 // last include
@@ -53,21 +48,90 @@ namespace rfs_daemon
 
 
 data_receiver::data_receiver(
-          server * s
-        , ed::tcp_bio_client::pointer_t client)
-    : tcp_server_client_connection(client)
-    , f_server(s)
+          std::string const & filename
+        , std::uint32_t id
+        , addr::addr const & address
+        , ed::mode_t mode)
+    : tcp_client_connection(address, mode)
+    , f_filename(filename)
+    , f_id(id)
 {
+    set_name("data_receiver");
+
+    if(f_filename.empty())
+    {
+        throw rfs::missing_parameter("filename cannot be empty in data_receiver");
+    }
+
+    // send info about the file we want to download to the sender
+    //
+    // (since the sender can send multiple messages about changing
+    // files simultaneously)
+    //
+    file_request request;
+    request.f_id = f_id;
+
+    char const * d(reinterpret_cast<char const *>(&request));
+    f_request.insert(f_request.end(), d, d + sizeof(request));
+}
+
+
+ssize_t data_receiver::write(void const * data, std::size_t length)
+{
+    if(get_socket() == -1)
+    {
+        errno = EBADF;
+        return -1;
+    }
+
+    if(data != nullptr && length > 0)
+    {
+        char const * d(reinterpret_cast<char const *>(data));
+        f_request.insert(f_request.end(), d, d + length);
+        return length;
+    }
+
+    return 0;
+}
+
+
+bool data_receiver::is_writer() const
+{
+    return get_socket() != -1 && !f_request.empty();
 }
 
 
 void data_receiver::process_read()
 {
-    int r(0);
+    // use RAII to process the next level on exit wherever it happens
+    //
+    class on_exit
+    {
+    public:
+        on_exit(data_receiver::pointer_t receiver)
+            : f_receiver(receiver)
+        {
+        }
 
+        ~on_exit()
+        {
+            f_receiver->tcp_client_connection::process_read();
+        }
+
+    private:
+        data_receiver::pointer_t    f_receiver;
+    };
+    on_exit raii_on_exit(std::dynamic_pointer_cast<data_receiver>(shared_from_this()));
+
+    if(get_socket() == -1)
+    {
+        return;
+    }
+
+    int r(0);
     if(f_received_bytes < sizeof(f_header))
     {
-        r = read(&f_header + f_received_bytes, sizeof(f_header));
+        r = read(&f_header + f_received_bytes, sizeof(f_header) - f_received_bytes);
         if(r == -1)
         {
             SNAP_LOG_ERROR
@@ -94,29 +158,19 @@ void data_receiver::process_read()
                 process_error();
                 return;
             }
+            if(f_id != f_header.f_id)
+            {
+                SNAP_LOG_ERROR
+                    << "file id mismatched, expected \""
+                    << f_id
+                    << "\", receiving \""
+                    << f_header.f_id
+                    << "\" instead."
+                    << SNAP_LOG_SEND;
+                process_error();
+                return;
+            }
 
-            f_incoming_file = f_server->get_file(f_header.f_id);
-            if(f_incoming_file != nullptr)
-            {
-                SNAP_LOG_ERROR
-                    << "file id \""
-                    << f_header.f_id
-                    << "\" not found on this server."
-                    << SNAP_LOG_SEND;
-                process_error();
-                return;
-            }
-            f_filename = f_incoming_file->get_filename();
-            if(f_filename.empty())
-            {
-                SNAP_LOG_ERROR
-                    << "file id \""
-                    << f_header.f_id
-                    << "\" not found on this server."
-                    << SNAP_LOG_SEND;
-                process_error();
-                return;
-            }
             // while receiving, use parts (right now, we don't expect to
             // have to use more than one part)
             //
@@ -153,7 +207,9 @@ void data_receiver::process_read()
             if(r == -1)
             {
                 SNAP_LOG_ERROR
-                    << "an I/O error occurred while reading the file data."
+                    << "an I/O error occurred while receiving file data for \""
+                    << f_filename
+                    << "\"."
                     << SNAP_LOG_SEND;
                 process_error();
                 return;
@@ -170,7 +226,7 @@ void data_receiver::process_read()
 
     if(f_received_bytes - sizeof(f_header) - f_header.f_size < sizeof(f_footer))
     {
-        r = read(&f_footer + f_received_bytes - sizeof(f_header) - f_header.f_size, sizeof(f_footer));
+        r = read(&f_footer + f_received_bytes - sizeof(f_header) - f_header.f_size, sizeof(f_footer) - (f_received_bytes - sizeof(f_header) - f_header.f_size));
         if(r == -1)
         {
             SNAP_LOG_ERROR
@@ -252,14 +308,50 @@ void data_receiver::process_read()
             }
 
             remove_from_communicator();
+        }
+    }
+}
 
-            f_incoming_file->set_received();
+
+void data_receiver::process_write()
+{
+    if(get_socket() != -1)
+    {
+        errno = 0;
+        ssize_t const r(tcp_client_connection::write(&f_request[f_position], f_request.size() - f_position));
+        if(r > 0)
+        {
+            // some data was written
+            //
+            f_position += r;
+            if(f_position >= f_request.size())
+            {
+                f_request.clear();
+                f_position = 0;
+                process_empty_buffer();
+            }
+        }
+        else if(r < 0 && errno != 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+        {
+            // connection is considered bad, generate an error
+            //
+            int const e(errno);
+            SNAP_LOG_ERROR
+                << "an error occurred while writing to socket of \""
+                << get_name()
+                << "\" (errno: "
+                << e
+                << " -- "
+                << strerror(e)
+                << ")."
+                << SNAP_LOG_SEND;
+            process_error();
+            return;
         }
     }
 
     // process next level too
-    //
-    tcp_server_client_connection::process_read();
+    tcp_client_connection::process_write();
 }
 
 

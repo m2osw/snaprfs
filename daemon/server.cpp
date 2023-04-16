@@ -53,15 +53,46 @@
  * and want to send the files to all the other computers at once.
  * However, many network on the Internet do not properly support
  * broadcasting between computers.
+ *
+ * \msc
+ *   width = "2000";
+ *   file_listener, server, messenger, sender,
+ *   communicatord, remote_communicatord,
+ *   remote_messenger, remote_server, remote_receiver;
+ * 
+ *   file_listener rbox communicatord [label = "source"];
+ *   remote_communicatord rbox remote_receiver [label = "destination"];
+ *   server=>messenger [label = "create"];
+ *   messenger->communicatord [label = "connect"];
+ *   server=>file_listener [label = "create"];
+ *   server=>sender [label = "create"];
+ *   --- [label = "ready"];
+ *   file_listener=>server [label = "File Changed"];
+ *   server=>messenger [label = "RFS_FILE_CHANGED"];
+ *   messenger->communicatord [label = "RFS_FILE_CHANGED"];
+ *   communicatord->remote_communicatord [label = "RFS_FILE_CHANGED"];
+ *   remote_communicatord->remote_messenger [label = "RFS_FILE_CHANGED"];
+ *   remote_messenger=>remote_server [label = "receive_file()"];
+ *   remote_server=>remote_receiver [label = "create"];
+ *   remote_receiver->sender [label = "connect"];
+ *   --- [label = "start send loop"];
+ *   sender->remote_receiver [label = "send file data"];
+ *   remote_receiver=>remote_receiver [label = "save file (.part1)"];
+ *   --- [label = "end send loop"];
+ *   remote_receiver=>remote_receiver [label = "rename file (remove .part1)"];
+ * \endmsc
  */
 
 // self
 //
 #include    "server.h"
 
+#include    "data_receiver.h"
+
 
 // snaprfs
 //
+#include    <snaprfs/exception.h>
 #include    <snaprfs/version.h>
 
 
@@ -80,6 +111,11 @@
 // libexcept
 //
 #include    <libexcept/file_inheritance.h>
+
+
+// edhttp
+//
+#include    <edhttp/uri.h>
 
 
 // snaplogger
@@ -121,6 +157,30 @@ advgetopt::option const g_command_line_options[] =
 
     // OPTIONS
     //
+    advgetopt::define_option(
+          advgetopt::Name("listen")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Help("plain listen URL for the snaprfs data channel.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("certificate")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Help("certificate for the data server connection.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("private-key")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Help("private key for the data server connection.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("secure-listen")
+        , advgetopt::Flags(advgetopt::standalone_all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Help("URL to listen on with TLS for the snaprfs data channel.")
+    ),
     advgetopt::define_option(
           advgetopt::Name("watch-dirs")
         , advgetopt::Flags(advgetopt::standalone_all_flags<
@@ -214,7 +274,10 @@ shared_file::shared_file(std::string const & filename)
 {
     // get a random number for the identifier of this file
     //
-    getrandom(&f_id, sizeof(f_id), 0);
+    if(getrandom(&f_id, sizeof(f_id), 0) != sizeof(f_id))
+    {
+        throw rfs::no_random_data_available("no random data available fo shared_file() identifier");
+    }
 }
 
 
@@ -279,21 +342,114 @@ server::server(int argc, char * argv[])
         throw advgetopt::getopt_exit("logger options generated an error.", 1);
     }
 
-    f_messenger->process_communicatord_options();
-
     std::string const watch_dirs(f_opts.get_string("watch-dirs"));
-    f_file_listener = std::make_shared<file_listener>(this, watch_dirs);
-    f_communicator->add_connection(f_file_listener);
+    if(watch_dirs.empty())
+    {
+        throw rfs::missing_parameter("the watch_dirs=... parameter is mandatory.");
+    }
+
+    f_messenger->process_communicatord_options();
 }
 
 
 int server::run()
 {
-std::cerr << "--- TODO: implement\n";
-
     f_communicator->run();
-
     return f_force_restart ? 1 : 0;
+}
+
+
+void server::ready()
+{
+    // start listening for file changes only once we are connected
+    // to the communicator daemon
+    //
+    std::string const watch_dirs(f_opts.get_string("watch-dirs"));
+    f_file_listener = std::make_shared<file_listener>(this, watch_dirs);
+    f_communicator->add_connection(f_file_listener);
+
+    edhttp::uri u;
+    u.set_uri(f_opts.get_string("listen"));
+    if(u.scheme() != "rfs")
+    {
+        SNAP_LOG_RECOVERABLE_ERROR
+            << "the \"listen=...\" parameter must have an address with the scheme set to \"rfs\". \""
+            << f_opts.get_string("listen")
+            << "\" is not supported."
+            << SNAP_LOG_SEND;
+    }
+    else
+    {
+        addr::addr_range::vector_t const & ranges(u.address_ranges());
+        if(ranges.size() != 1
+        || !ranges[0].has_from()
+        || ranges[0].has_to())
+        {
+            SNAP_LOG_ERROR
+                << "the \"listen=...\" parameter must have an address with the scheme set to \"rfs\". \""
+                << f_opts.get_string("listen")
+                << "\" is not supported."
+                << SNAP_LOG_SEND;
+            stop(false);
+            return;
+        }
+        f_data_server = std::make_shared<data_server>(
+                              this
+                            , ranges[0].get_from()
+                            , std::string()
+                            , std::string()
+                            , ed::mode_t::MODE_PLAIN
+                            , -1
+                            , true);
+        f_communicator->add_connection(f_data_server);
+    }
+
+    // also create a secure listener if the user specified a
+    // certificate and a private key
+    //
+    std::string const secure_listen(f_opts.get_string("secure-listen"));
+    std::string const certificate(f_opts.get_string("certificate"));
+    std::string const private_key(f_opts.get_string("private-key"));
+    if(!secure_listen.empty() && !certificate.empty() && !private_key.empty())
+    {
+        u.set_uri(secure_listen);
+        if(u.scheme() != "rfss")
+        {
+            SNAP_LOG_RECOVERABLE_ERROR
+                << "the \"secure_listen=...\" parameter must have an address with the scheme set to \"rfss\". \""
+                << secure_listen
+                << "\" is not supported."
+                << SNAP_LOG_SEND;
+        }
+        else
+        {
+            addr::addr_range::vector_t const & ranges(u.address_ranges());
+            if(ranges.size() != 1
+            || ranges[0].size() != 1
+            || !ranges[0].has_from())
+            {
+                SNAP_LOG_ERROR
+                    << "the \"secure_listen=...\" parameter must have an address with the scheme set to \"rfs\". \""
+                    << secure_listen
+                    << "\" is not supported."
+                    << SNAP_LOG_SEND;
+                stop(false);
+                return;
+            }
+            else
+            {
+                f_secure_data_server = std::make_shared<data_server>(
+                                      this
+                                    , ranges[0].get_from()
+                                    , certificate
+                                    , private_key
+                                    , ed::mode_t::MODE_ALWAYS_SECURE
+                                    , -1
+                                    , true);
+                f_communicator->add_connection(f_secure_data_server);
+            }
+        }
+    }
 }
 
 
@@ -385,12 +541,25 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
     // can download the file from us
     //
     ed::message msg;
-    msg.set_command("RFS_FILE_UPDATED");
+    msg.set_command("RFS_FILE_CHANGED");
     msg.set_service("*"); // see communicatord/TODO.md -- how to only broadcast to snaprfs services
     msg.add_parameter("filename", file->get_filename());
     msg.add_parameter("id", file->get_id());
+    msg.add_parameter("my_address", file->get_id());
     f_messenger->send_message(msg);
 }
+
+
+void server::receive_file(std::string const & filename, std::uint32_t id, addr::addr const & address)
+{
+    data_receiver::pointer_t receiver(std::make_shared<data_receiver>(
+          filename
+        , id
+        , address
+        , ed::mode_t::MODE_PLAIN));
+    f_communicator->add_connection(receiver);
+}
+
 
 
 

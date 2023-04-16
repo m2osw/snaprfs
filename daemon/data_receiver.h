@@ -26,7 +26,7 @@
 
 // eventdispatcher
 //
-#include    <eventdispatcher/tcp_server_client_connection.h>
+#include    <eventdispatcher/tcp_client_connection.h>
 
 
 
@@ -40,28 +40,34 @@ class server;
 
 
 class data_receiver
-    : public ed::tcp_server_client_connection
+    : public ed::tcp_client_connection
 {
 public:
     typedef std::shared_ptr<data_receiver>    pointer_t;
 
                         data_receiver(
-                              server * s
-                            , ed::tcp_bio_client::pointer_t client);
-                        data_receiver(data_receiver const &) = delete;
-    data_receiver &     operator = (data_receiver const &) = delete;
+                              std::string const & filename
+                            , std::uint32_t id
+                            , addr::addr const & address
+                            , ed::mode_t mode = ed::mode_t::MODE_PLAIN);
+    //                    data_receiver(data_receiver const &) = delete;
+    //data_receiver &     operator = (data_receiver const &) = delete;
 
-    virtual void        process_read();
+    // tcp_client_connection implementation
+    virtual ssize_t     write(void const * data, size_t length) override;
+    virtual bool        is_writer() const override;
+    virtual void        process_read() override;
+    virtual void        process_write() override;
 
 private:
-    server *            f_server = nullptr;
-    std::shared_ptr<shared_file>
-                        f_incoming_file = std::shared_ptr<shared_file>();
-    std::size_t         f_received_bytes = 0;
-    data_header         f_header = {};
-    data_footer         f_footer = {};
     std::string         f_filename = std::string();
     std::string         f_receiving_filename = std::string();
+    std::vector<char>   f_request = std::vector<char>();
+    std::uint32_t       f_id = 0;
+    std::size_t         f_received_bytes = 0;
+    std::size_t         f_position = 0;
+    data_header         f_header = {};
+    data_footer         f_footer = {};
     std::ofstream       f_output = std::ofstream();
     murmur3::stream     f_murmur3 = murmur3::stream(DATA_SEED_H1, DATA_SEED_H2);
 };
