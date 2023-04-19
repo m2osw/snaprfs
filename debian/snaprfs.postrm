@@ -14,6 +14,10 @@ then
     #
     rm -f /etc/${ENVIRONMENT_NAME}/${ENVIRONMENT_NAME}.d/50-${PACKAGE_NAME}.conf
 
+    # delete the watch-dirs from the home directory
+    #
+    rmdir --ignore-fail-on-non-empty /var/lib/${ENVIRONMENT_NAME}/watch-dirs
+
     # delete the snaprfs log directories
     #
     destroy_log_dirs ${ENVIRONMENT_NAME}

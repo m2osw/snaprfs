@@ -15,6 +15,33 @@ then
     USER_NAME=snaprfs
     GROUP_NAME=snaprfs
 
+    # Create a default user editable communicatord.conf file if it does not
+    # exist yet
+    #
+    SNAPRFS_USER_CONFIGURATION_FILE=/etc/${ENVIRONMENT_NAME}/${ENVIRONMENT_NAME}.d/50-${PACKAGE_NAME}.conf
+    if test ! -f ${SNAPRFS_USER_CONFIGURATION_FILE}
+    then
+        # When first installing, we do not have the public IP address
+        # (okay, we do, but we cannot be sure which one is right because
+        # the user may have a weird network setup...) so instead we create
+        # a default file if it does not already exist and put some info
+        # to make it a bit easier to deal with the matter
+        #
+        echo "# Variables you are likely to edit" >${SNAPRFS_USER_CONFIGURATION_FILE}
+        echo "#" >>${SNAPRFS_USER_CONFIGURATION_FILE}
+        echo "# See /etc/snaprfs/snaprfs.conf for documentation" >>${SNAPRFS_USER_CONFIGURATION_FILE}
+        echo "#" >>${SNAPRFS_USER_CONFIGURATION_FILE}
+        echo "#listen=" >>${SNAPRFS_USER_CONFIGURATION_FILE}
+        echo "#secure_listen=" >>${SNAPRFS_USER_CONFIGURATION_FILE}
+        echo "#certificate=" >>${SNAPRFS_USER_CONFIGURATION_FILE}
+        echo "#private_key=" >>${SNAPRFS_USER_CONFIGURATION_FILE}
+        echo "#communicatord_listen=" >>${SNAPRFS_USER_CONFIGURATION_FILE}
+    fi
+
+    # Create the directory where other services install configuration files
+    #
+    mkdir -p /var/lib/${ENVIRONMENT_NAME}/watch-dirs
+
     # Create the logfile because the snaprfs user may otherwise have
     # difficulties with it during logrotate.
     #

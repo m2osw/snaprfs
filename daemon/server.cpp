@@ -159,33 +159,39 @@ advgetopt::option const g_command_line_options[] =
     //
     advgetopt::define_option(
           advgetopt::Name("listen")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Flags(advgetopt::all_flags<
+                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS
+            , advgetopt::GETOPT_FLAG_REQUIRED>())
         , advgetopt::Help("plain listen URL for the snaprfs data channel.")
     ),
     advgetopt::define_option(
           advgetopt::Name("certificate")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Flags(advgetopt::all_flags<
+              advgetopt::GETOPT_FLAG_GROUP_OPTIONS
+            , advgetopt::GETOPT_FLAG_REQUIRED>())
         , advgetopt::Help("certificate for the data server connection.")
     ),
     advgetopt::define_option(
           advgetopt::Name("private-key")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Flags(advgetopt::all_flags<
+              advgetopt::GETOPT_FLAG_GROUP_OPTIONS
+            , advgetopt::GETOPT_FLAG_REQUIRED>())
         , advgetopt::Help("private key for the data server connection.")
     ),
     advgetopt::define_option(
           advgetopt::Name("secure-listen")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Flags(advgetopt::all_flags<
+              advgetopt::GETOPT_FLAG_GROUP_OPTIONS
+            , advgetopt::GETOPT_FLAG_REQUIRED>())
         , advgetopt::Help("URL to listen on with TLS for the snaprfs data channel.")
     ),
     advgetopt::define_option(
           advgetopt::Name("watch-dirs")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_OPTIONS>())
+        , advgetopt::Flags(advgetopt::all_flags<
+              advgetopt::GETOPT_FLAG_GROUP_OPTIONS
+            , advgetopt::GETOPT_FLAG_REQUIRED>())
         , advgetopt::Help("one or more colon (:) separated directory names where configuration files are found.")
+        , advgetopt::DefaultValue("/usr/share/snaprfs/watch-dirs:/var/lib/snaprfs/watch-dirs")
     ),
 
     // END
@@ -335,17 +341,11 @@ server::server(int argc, char * argv[])
 
     f_opts.finish_parsing(argc, argv);
 
-    if(!snaplogger::process_logger_options(f_opts, "/etc/snaplogger"))
+    if(!snaplogger::process_logger_options(f_opts, "/etc/snaprfs/logger"))
     {
         // exit on any error
         //
         throw advgetopt::getopt_exit("logger options generated an error.", 1);
-    }
-
-    std::string const watch_dirs(f_opts.get_string("watch-dirs"));
-    if(watch_dirs.empty())
-    {
-        throw rfs::missing_parameter("the watch_dirs=... parameter is mandatory.");
     }
 
     f_messenger->process_communicatord_options();
