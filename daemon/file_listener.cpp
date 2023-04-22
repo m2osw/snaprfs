@@ -98,6 +98,8 @@ bool path_info::operator < (path_info const & rhs) const
 file_listener::file_listener(server *s, std::string const & watch_dirs)
     : f_server(s)
 {
+    set_name("file_listener");
+
     std::list<std::string> paths;
     snapdev::tokenize_string(
           paths
@@ -107,6 +109,24 @@ file_listener::file_listener(server *s, std::string const & watch_dirs)
     for(auto const & p : paths)
     {
         load_setup(p);
+    }
+
+    SNAP_LOG_CONFIGURATION
+        << "found "
+        << f_count_paths
+        << " directory path"
+        << (f_count_paths == 1 ? "" : "s")
+        << " to manage, "
+        << f_count_listens
+        << " of which we are listening to for changes on this system."
+        << SNAP_LOG_SEND;
+
+    if(f_count_paths == 0)
+    {
+        SNAP_LOG_FATAL
+            << "absolutely no configuration found; you need at least one path before you can start the snaprfs daemon."
+            << SNAP_LOG_SEND;
+        throw rfs::configuration_missing("no paths were found in your configuration files; the daemon would no be able to do anything.");
     }
 }
 
@@ -132,8 +152,25 @@ void file_listener::load_setup(std::string const & dir)
             << SNAP_LOG_SEND;
         return;
     }
+
+    if(filenames.empty())
+    {
+        SNAP_LOG_CONFIGURATION
+            << "no configuration files found in \""
+            << dir
+            << "\"."
+            << SNAP_LOG_SEND;
+        return;
+    }
+
     for(auto const & name : filenames)
     {
+        SNAP_LOG_CONFIGURATION
+            << "loading configuration \""
+            << name
+            << "\" for list of directories to listen to."
+            << SNAP_LOG_SEND;
+
         advgetopt::conf_file_setup setup(name);
         advgetopt::conf_file::pointer_t settings(advgetopt::conf_file::get_conf_file(setup));
         advgetopt::variables::pointer_t variables(std::make_shared<advgetopt::variables>());
@@ -143,94 +180,94 @@ void file_listener::load_setup(std::string const & dir)
         for(auto const & s : sections)
         {
             std::string const path_name(s + "::path");
-            if(settings->has_parameter(path_name))
-            {
-                std::string const path(settings->get_parameter(path_name));
-                if(path.empty()
-                || path == "/")
-                {
-                    SNAP_LOG_RECOVERABLE_ERROR
-                        << "ignoring path \""
-                        << path
-                        << "\" since its mode empty or \"/\" which are not considered valid for inotify."
-                        << SNAP_LOG_SEND;
-                    continue;
-                }
-                path_info new_path_info(path);
-                std::string const mode_name(s + "::mode");
-                if(settings->has_parameter(mode_name))
-                {
-                    std::string const mode(settings->get_parameter(path_name));
-                    if(mode.empty()
-                    || mode == "send-only")
-                    {
-                        new_path_info.set_mode(path_mode_t::PATH_MODE_SEND_ONLY);
-                    }
-                    else if(mode == "receive-only")
-                    {
-                        new_path_info.set_mode(path_mode_t::PATH_MODE_RECEIVE_ONLY);
-                    }
-                    else if(mode == "latest")
-                    {
-                        new_path_info.set_mode(path_mode_t::PATH_MODE_LATEST);
-                    }
-                    else
-                    {
-                        SNAP_LOG_RECOVERABLE_ERROR
-                            << "ignoring path \""
-                            << path
-                            << "\" since its mode ("
-                            << mode
-                            << ") was not recognized."
-                            << SNAP_LOG_SEND;
-                        continue;
-                    }
-                }
-                //else -- keep default since "send-only" is the safest
-
-                auto const inserted(f_path_info.insert(new_path_info));
-                if(inserted.second)
-                {
-                    if(new_path_info.get_mode() != path_mode_t::PATH_MODE_RECEIVE_ONLY)
-                    {
-                        // watch the files in this directory
-                        //
-                        // the UPDATED is used because that tells us the
-                        // file was opened, updated (write/truncate) and
-                        // then closed--at the moment we do not deal with
-                        // files that get and stay opened (i.e. logs like
-                        // files will not work well with snaprfs)
-                        //
-                        // TODO: listen for WRITE events and react after a
-                        //       small amount of time (i.e. after say 5 sec.
-                        //       still emit a copy event)
-                        //
-                        watch_file(
-                                  new_path_info.get_path()
-                                , ed::SNAP_FILE_CHANGED_EVENT_UPDATED
-                                | ed::SNAP_FILE_CHANGED_EVENT_WRITE);
-                    }
-                }
-                else
-                {
-                    SNAP_LOG_RECOVERABLE_ERROR
-                        << "ignoring second definition of path \""
-                        << path
-                        << "\" found in file \""
-                        << name
-                        << "\"."
-                        << SNAP_LOG_SEND;
-                    continue;
-                }
-            }
-            else
+            if(!settings->has_parameter(path_name))
             {
                 SNAP_LOG_CONFIGURATION
                     << "ignoring section \""
                     << s
                     << "\" since it has no \"path=...\" parameter."
                     << SNAP_LOG_SEND;
+                continue;
             }
+
+            std::string const path(settings->get_parameter(path_name));
+            if(path.empty()
+            || path == "/")
+            {
+                SNAP_LOG_RECOVERABLE_ERROR
+                    << "ignoring path \""
+                    << path
+                    << "\" since its an empty string or \"/\" which are not considered valid for inotify."
+                    << SNAP_LOG_SEND;
+                continue;
+            }
+
+            path_info new_path_info(path);
+            std::string const mode_name(s + "::mode");
+            if(settings->has_parameter(mode_name))
+            {
+                std::string const mode(settings->get_parameter(path_name));
+                if(mode.empty()
+                || mode == "send-only")
+                {
+                    new_path_info.set_mode(path_mode_t::PATH_MODE_SEND_ONLY);
+                }
+                else if(mode == "receive-only")
+                {
+                    new_path_info.set_mode(path_mode_t::PATH_MODE_RECEIVE_ONLY);
+                }
+                else if(mode == "latest")
+                {
+                    new_path_info.set_mode(path_mode_t::PATH_MODE_LATEST);
+                }
+                else
+                {
+                    SNAP_LOG_RECOVERABLE_ERROR
+                        << "ignoring path \""
+                        << path
+                        << "\" since its mode ("
+                        << mode
+                        << ") was not recognized."
+                        << SNAP_LOG_SEND;
+                    continue;
+                }
+            }
+            //else -- keep default since "send-only" is the safest
+
+            auto const inserted(f_path_info.insert(new_path_info));
+            if(!inserted.second)
+            {
+                SNAP_LOG_RECOVERABLE_ERROR
+                    << "ignoring second definition of path \""
+                    << path
+                    << "\" found in file \""
+                    << name
+                    << "\"."
+                    << SNAP_LOG_SEND;
+                continue;
+            }
+
+            if(new_path_info.get_mode() != path_mode_t::PATH_MODE_RECEIVE_ONLY)
+            {
+                // watch the files in this directory
+                //
+                // the UPDATED is used because that tells us the
+                // file was opened, updated (write/truncate) and
+                // then closed--at the moment we do not deal with
+                // files that get and stay opened (i.e. logs like
+                // files will not work well with snaprfs)
+                //
+                // TODO: listen for WRITE events and react after a
+                //       small amount of time (i.e. after say 5 sec.
+                //       still emit a copy event)
+                //
+                watch_file(
+                          new_path_info.get_path()
+                        , ed::SNAP_FILE_CHANGED_EVENT_UPDATED
+                        | ed::SNAP_FILE_CHANGED_EVENT_WRITE);
+                ++f_count_listens;
+            }
+            ++f_count_paths;
         }
     }
 }

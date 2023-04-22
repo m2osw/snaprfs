@@ -95,6 +95,8 @@ messenger::~messenger()
 void messenger::ready(ed::message & msg)
 {
     snapdev::NOT_USED(msg);
+
+    f_server->ready();
 }
 
 

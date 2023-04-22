@@ -85,6 +85,8 @@ private:
 
     server *            f_server = nullptr;
     path_info::set_t    f_path_info = path_info::set_t();
+    std::size_t         f_count_paths = 0;
+    std::size_t         f_count_listens = 0;
 };
 
 

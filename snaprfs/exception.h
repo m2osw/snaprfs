@@ -43,10 +43,11 @@ DECLARE_LOGIC_ERROR(logic_error);
 
 DECLARE_MAIN_EXCEPTION(rfs_error);
 
+DECLARE_EXCEPTION(rfs_error, configuration_missing);
 DECLARE_EXCEPTION(rfs_error, duplicate_file);
-DECLARE_EXCEPTION(rfs_error, unsupported_file);
 DECLARE_EXCEPTION(rfs_error, missing_parameter);
 DECLARE_EXCEPTION(rfs_error, no_random_data_available);
+DECLARE_EXCEPTION(rfs_error, unsupported_file);
 
 
 
