@@ -19,6 +19,8 @@ ExecStop=/usr/bin/ed-signal --message STOP --server 127.0.0.1:4044
 
 Restart=on-failure
 RestartSec=10
+# No auto-restart if configuration is invalid
+SuccessExitStatus=9
 User=fluid-settings
 Group=fluid-settings
 LimitNPROC=1000

@@ -33,6 +33,7 @@
 // advgetopt
 //
 #include    <advgetopt/conf_file.h>
+#include    <advgetopt/exception.h>
 
 
 // snaplogger
@@ -126,7 +127,9 @@ file_listener::file_listener(server *s, std::string const & watch_dirs)
         SNAP_LOG_FATAL
             << "absolutely no configuration found; you need at least one path before you can start the snaprfs daemon."
             << SNAP_LOG_SEND;
-        throw rfs::configuration_missing("no paths were found in your configuration files; the daemon would no be able to do anything.");
+        throw advgetopt::getopt_exit(
+                      "no paths were found in your configuration files; the daemon would no be able to do anything."
+                    , advgetopt::CONFIGURATION_EXIT_CODE);
     }
 }
 
@@ -139,7 +142,9 @@ void file_listener::load_setup(std::string const & dir)
         // note that "/" is perfectly valid, we just think that's most
         // probably in error and do not want to support it in snaprfs
         //
-        throw rfs::unsupported_file("the root directory (/) and an empty string are not valid paths for the inotify configuration file directory.");
+        throw advgetopt::getopt_exit(
+                      "the root directory (/) and an empty string are not valid paths for the inotify configuration file directory."
+                    , advgetopt::CONFIGURATION_EXIT_CODE);
     }
 
     std::string const pattern(dir + "/*.conf");
@@ -148,7 +153,9 @@ void file_listener::load_setup(std::string const & dir)
             snapdev::glob_to_list_flag_t::GLOB_FLAG_EMPTY>(pattern))
     {
         SNAP_LOG_MINOR
-            << "no configuration files found for the file_listener."
+            << "could not read directory with pattern \""
+            << pattern
+            << "\"."
             << SNAP_LOG_SEND;
         return;
     }

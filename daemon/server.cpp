@@ -614,9 +614,9 @@ int main(int argc, char * argv[])
         rfs_daemon::server rfs(argc, argv);
         return rfs.run();
     }
-    catch(advgetopt::getopt_exit const &)
+    catch(advgetopt::getopt_exit const & e)
     {
-        return 0;
+        return e.code();
     }
     catch(std::exception const & e)
     {
