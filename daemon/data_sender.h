@@ -50,13 +50,9 @@ struct data_header
     std::uint8_t        f_magic[4] = { 'D', 'A', 'T', 'A' };
     std::uint32_t       f_id = 0;
     std::uint32_t       f_size = 0;
-};
-
-
-struct file_request
-{
-    std::uint8_t        f_magic[4] = { 'F', 'I', 'L', 'E' };
-    std::uint32_t       f_id = 0;
+    std::uint16_t       f_mode = 0;
+    std::uint8_t        f_username_length = 0;
+    std::uint8_t        f_groupname_length = 0;
 };
 
 
@@ -64,6 +60,13 @@ struct data_footer
 {
     std::uint8_t        f_murmur3[murmur3::HASH_SIZE] = {};
     std::uint8_t        f_end[4] = { 'E', 'N', 'D', '!' };
+};
+
+
+struct file_request
+{
+    std::uint8_t        f_magic[4] = { 'F', 'I', 'L', 'E' };
+    std::uint32_t       f_id = 0;
 };
 
 

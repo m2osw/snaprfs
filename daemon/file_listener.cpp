@@ -96,7 +96,7 @@ bool path_info::operator < (path_info const & rhs) const
 
 
 
-file_listener::file_listener(server *s, std::string const & watch_dirs)
+file_listener::file_listener(server * s, std::string const & watch_dirs)
     : f_server(s)
 {
     set_name("file_listener");

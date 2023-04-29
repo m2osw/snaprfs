@@ -22,6 +22,7 @@ project(snaprfs_project)
 
 find_package(SnapCMakeModules REQUIRED)
 find_package(AdvGetOpt        REQUIRED)
+find_package(AtomicNames      REQUIRED)
 find_package(CppThread        REQUIRED)
 find_package(Communicatord    REQUIRED)
 find_package(EdHttp           REQUIRED)

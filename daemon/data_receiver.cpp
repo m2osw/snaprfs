@@ -36,6 +36,12 @@
 #include    <snaplogger/message.h>
 
 
+// snapdev
+//
+#include    <snapdev/as_root.h>
+#include    <snapdev/chownnm.h>
+
+
 // last include
 //
 #include    <snapdev/poison.h>
@@ -175,34 +181,93 @@ void data_receiver::process_read()
             // have to use more than one part)
             //
             f_receiving_filename = f_filename + ".part1";
-
-            f_output.open(
-                      f_receiving_filename
-                    , std::ios_base::trunc | std::ios_base::binary | std::ios_base::ate);
-            if(!f_output.is_open())
-            {
-                int const e(errno);
-                SNAP_LOG_ERROR
-                    << "could not open output file \""
-                    << f_receiving_filename
-                    << "\" for writing (errno: "
-                    << e
-                    << ", "
-                    << strerror(e)
-                    << ")."
-                    << SNAP_LOG_SEND;
-                process_error();
-                return;
-            }
         }
+
+        // we need to also read the user & group names
+        //
+        f_header_size = sizeof(f_header)
+                        + f_header.f_username_length
+                        + f_header.f_groupname_length;
     }
 
     if(f_received_bytes >= sizeof(f_header))
     {
-        while(f_received_bytes - sizeof(f_header) < f_header.f_size)
+        while(f_received_bytes < f_header_size)
+        {
+            // note: the f_names buffer is allocated once on creation with
+            //       512 bytes since the maximum size for each name is
+            //       255 it will always be enough
+            //
+            std::size_t const size_left(f_received_bytes - sizeof(f_header));
+            r = read(f_names.data(), std::min(size_left, f_names.size()));
+            if(r == -1)
+            {
+                SNAP_LOG_ERROR
+                    << "an I/O error occurred while receiving file data for \""
+                    << f_filename
+                    << "\"."
+                    << SNAP_LOG_SEND;
+                process_error();
+                return;
+            }
+            if(r == 0)
+            {
+                return;
+            }
+            f_received_bytes += r;
+        }
+
+        // we may not own the file (we are "snaprfs", after all), so we become
+        // root, open the file, change the ownership and mode, we can then
+        // drop back as "snaprfs" and write the content which we receive
+        // afterward to the file without being root
+        //
+        snapdev::as_root safe_root;
+
+        f_output.open(
+                  f_receiving_filename
+                , std::ios_base::trunc | std::ios_base::binary | std::ios_base::ate);
+        if(!f_output.is_open())
+        {
+            int const e(errno);
+            SNAP_LOG_ERROR
+                << "could not open output file \""
+                << f_receiving_filename
+                << "\" for writing (errno: "
+                << e
+                << ", "
+                << strerror(e)
+                << ")."
+                << SNAP_LOG_SEND;
+            process_error();
+            return;
+        }
+
+        std::string const username(f_names.data(), f_header.f_username_length);
+        std::string const groupname(f_names.data() + f_header.f_username_length, f_header.f_groupname_length);
+        if(snapdev::chownnm(f_receiving_filename, username, groupname) != 0)
+        {
+            int const e(errno);
+            SNAP_LOG_RECOVERABLE_ERROR
+                << "could not change user and/or group name of output file \""
+                << f_receiving_filename
+                << "\" (errno: "
+                << e
+                << ", "
+                << strerror(e)
+                << ")."
+                << SNAP_LOG_SEND;
+            // continue in this case, although the file may not be readable
+            // by the service owning this file as a result...
+        }
+    }
+
+    if(f_received_bytes >= f_header_size)
+    {
+        while(f_received_bytes - f_header_size < f_header.f_size)
         {
             std::uint8_t buf[1024 * 4];
-            std::size_t const size_left(f_received_bytes - sizeof(f_header));
+            std::size_t const size_left(f_received_bytes - f_header_size);
             r = read(buf, std::min(size_left, sizeof(buf)));
             if(r == -1)
             {
@@ -224,9 +289,9 @@ void data_receiver::process_read()
         }
     }
 
-    if(f_received_bytes - sizeof(f_header) - f_header.f_size < sizeof(f_footer))
+    if(f_received_bytes - f_header_size - f_header.f_size < sizeof(f_footer))
     {
-        r = read(&f_footer + f_received_bytes - sizeof(f_header) - f_header.f_size, sizeof(f_footer) - (f_received_bytes - sizeof(f_header) - f_header.f_size));
+        r = read(&f_footer + f_received_bytes - f_header_size - f_header.f_size, sizeof(f_footer) - (f_received_bytes - f_header_size - f_header.f_size));
         if(r == -1)
         {
             SNAP_LOG_ERROR
@@ -240,7 +305,7 @@ void data_receiver::process_read()
             return;
         }
         f_received_bytes += r;
-        if(f_received_bytes - sizeof(f_header) - f_header.f_size >= sizeof(f_footer))
+        if(f_received_bytes - f_header_size - f_header.f_size >= sizeof(f_footer))
         {
             f_output.close();
 
@@ -272,6 +337,10 @@ void data_receiver::process_read()
                 return;
             }
 
+#if 0
+            // surprise, the rename(2) is atomic and does not require us
+            // to first delete the destination file
+            //
             r = unlink(f_filename.c_str());
             if(r != 0
             && errno != ENOENT)
@@ -287,6 +356,7 @@ void data_receiver::process_read()
                     << "."
                     << SNAP_LOG_SEND;
             }
+#endif
 
             r = rename(f_receiving_filename.c_str(), f_filename.c_str());
             if(r != 0)

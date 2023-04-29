@@ -1,0 +1,13 @@
+# Global names for the Snap RFS Environment
+
+introducer=name
+project=snaprfs
+
+[public]
+cmd_rfs_file_changed=RFS_FILE_CHANGED
+
+param_filename=filename
+param_id=id
+param_my_address=my_address
+
+# vim: syntax=dosini

@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
+AtomicNames(names.an)
 
 ##
 ## snaprfs library
@@ -32,6 +33,7 @@ configure_file(
 add_library(${PROJECT_NAME} SHARED
     client.cpp
     connection.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/names.cpp
     order.cpp
     version.cpp
 )
@@ -84,6 +86,7 @@ install(
 install(
     FILES
         connection.h
+        ${CMAKE_CURRENT_BINARY_DIR}/names.h
         order.h
         rfs.h
         ${CMAKE_CURRENT_BINARY_DIR}/version.h

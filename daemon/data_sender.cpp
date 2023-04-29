@@ -35,6 +35,12 @@
 #include    <snaplogger/message.h>
 
 
+// C
+//
+#include    <grp.h>
+#include    <pwd.h>
+
+
 // last include
 //
 #include    <snapdev/poison.h>
@@ -68,6 +74,72 @@ bool data_sender::open()
         return false;
     }
 
+    struct stat s;
+    if(stat(f_filename.c_str(), &s) != 0)
+    {
+        int const e(errno);
+        SNAP_LOG_ERROR
+            << "could not get stats from file \""
+            << f_filename
+            << "\"; errno: "
+            << e
+            << ", "
+            << strerror(e)
+            << "."
+            << SNAP_LOG_SEND;
+        return false;
+    }
+    passwd * pw(getpwuid(s.st_uid));
+    if(pw == nullptr)
+    {
+        int const e(errno);
+        SNAP_LOG_ERROR
+            << "could not get user name from uid "
+            << s.st_uid
+            << " of file \""
+            << f_filename
+            << "\"; errno: "
+            << e
+            << ", "
+            << strerror(e)
+            << "."
+            << SNAP_LOG_SEND;
+        return false;
+    }
+    group * gr(getgrgid(s.st_gid));
+    if(gr == nullptr)
+    {
+        int const e(errno);
+        SNAP_LOG_ERROR
+            << "could not get group name from gid "
+            << s.st_gid
+            << " of file \""
+            << f_filename
+            << "\"; errno: "
+            << e
+            << ", "
+            << strerror(e)
+            << "."
+            << SNAP_LOG_SEND;
+        return false;
+    }
+    std::size_t const pw_len(strlen(pw->pw_name));
+    std::size_t const gr_len(strlen(gr->gr_name));
+    if(pw_len == 0 || pw_len > 255
+    || gr_len == 0 || gr_len > 255)
+    {
+        SNAP_LOG_ERROR
+            << "user or group name for "
+            << s.st_uid
+            << ':'
+            << s.st_gid
+            << " of file \""
+            << f_filename
+            << "\" could not be resolved."
+            << SNAP_LOG_SEND;
+        return false;
+    }
+
     f_input.open(f_filename);
     if(!f_input.is_open())
     {
@@ -84,15 +156,20 @@ bool data_sender::open()
         return false;
     }
 
-    data_header header;
-    header.f_id = f_file_request.f_id;
+    data_header * header(reinterpret_cast<data_header *>(new char[sizeof(data_header) + pw_len + gr_len]));
+    header->f_id = f_file_request.f_id;
+    header->f_mode = s.st_mode;
+    header->f_username_length = pw_len;
+    header->f_groupname_length = gr_len;
+    memcpy(&header + 1, pw->pw_name, pw_len);
+    memcpy(reinterpret_cast<char *>(&header + 1) + pw_len, gr->gr_name, gr_len);
 
     f_input.seekg(0, std::ios_base::end);
-    header.f_size = f_input.tellg();
+    header->f_size = f_input.tellg();
     f_input.seekg(0, std::ios_base::beg);
 
-    memcpy(f_buffer, &header, sizeof(header));
-    f_size = sizeof(header);
+    f_size = sizeof(header) + pw_len + gr_len;
+    memcpy(f_buffer, &header, f_size);
 
     return true;
 }

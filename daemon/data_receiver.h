@@ -63,9 +63,11 @@ private:
     std::string         f_filename = std::string();
     std::string         f_receiving_filename = std::string();
     std::vector<char>   f_request = std::vector<char>();
+    std::vector<char>   f_names = std::vector<char>(512);
     std::uint32_t       f_id = 0;
     std::size_t         f_received_bytes = 0;
     std::size_t         f_position = 0;
+    std::size_t         f_header_size = 0;
     data_header         f_header = {};
     data_footer         f_footer = {};
     std::ofstream       f_output = std::ofstream();
