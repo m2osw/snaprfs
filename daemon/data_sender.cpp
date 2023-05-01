@@ -175,6 +175,12 @@ bool data_sender::open()
 }
 
 
+bool data_sender::is_writer() const
+{
+    return get_socket() != -1 && f_size > 0;
+}
+
+
 void data_sender::process_read()
 {
     // use RAII to process the next level on exit wherever it happens

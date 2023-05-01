@@ -89,6 +89,7 @@ public:
 
     // tcp_client_connection implementation
     //
+    bool                is_writer() const override;
     virtual void        process_write() override;
     void                process_read() override;
 
