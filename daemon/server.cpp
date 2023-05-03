@@ -367,6 +367,17 @@ int server::run()
 
 void server::ready()
 {
+    // we receive the READY message each time we reconnect
+    //
+    // TBD: we probably want to look at disconnecting when we lose the
+    //      connection to the communicatord service; then remove this
+    //      test since we will then be able to reconnect
+    //
+    if(f_file_listener != nullptr)
+    {
+        return;
+    }
+
     // start listening for file changes only once we are connected
     // to the communicator daemon
     //
