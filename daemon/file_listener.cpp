@@ -75,15 +75,27 @@ std::string const & path_info::get_path() const
 }
 
 
-void path_info::set_mode(path_mode_t mode)
+void path_info::set_path_mode(path_mode_t path_mode)
 {
-    f_mode = mode;
+    f_path_mode = path_mode;
 }
 
 
-path_mode_t path_info::get_mode() const
+path_mode_t path_info::get_path_mode() const
 {
-    return f_mode;
+    return f_path_mode;
+}
+
+
+void path_info::set_delete_mode(delete_mode_t delete_mode)
+{
+    f_delete_mode = delete_mode;
+}
+
+
+delete_mode_t path_info::get_delete_mode() const
+{
+    return f_delete_mode;
 }
 
 
@@ -213,19 +225,19 @@ void file_listener::load_setup(std::string const & dir)
             std::string const mode_name(s + "::mode");
             if(settings->has_parameter(mode_name))
             {
-                std::string const mode(settings->get_parameter(path_name));
+                std::string const mode(settings->get_parameter(mode_name));
                 if(mode.empty()
                 || mode == "send-only")
                 {
-                    new_path_info.set_mode(path_mode_t::PATH_MODE_SEND_ONLY);
+                    new_path_info.set_path_mode(path_mode_t::PATH_MODE_SEND_ONLY);
                 }
                 else if(mode == "receive-only")
                 {
-                    new_path_info.set_mode(path_mode_t::PATH_MODE_RECEIVE_ONLY);
+                    new_path_info.set_path_mode(path_mode_t::PATH_MODE_RECEIVE_ONLY);
                 }
                 else if(mode == "latest")
                 {
-                    new_path_info.set_mode(path_mode_t::PATH_MODE_LATEST);
+                    new_path_info.set_path_mode(path_mode_t::PATH_MODE_LATEST);
                 }
                 else
                 {
@@ -241,6 +253,29 @@ void file_listener::load_setup(std::string const & dir)
             }
             //else -- keep default since "send-only" is the safest
 
+            std::string const delete_name(s + "::delete_mode");
+            if(settings->has_parameter(delete_name))
+            {
+                std::string const delete_mode(settings->get_parameter(delete_name));
+                if(delete_mode.empty()
+                || delete_mode == "ignore")
+                {
+                    new_path_info.set_delete_mode(delete_mode_t::DELETE_MODE_IGNORE);
+                }
+                else if(delete_mode == "apply")
+                {
+                    new_path_info.set_delete_mode(delete_mode_t::DELETE_MODE_APPLY);
+                }
+                else
+                {
+                    SNAP_LOG_RECOVERABLE_ERROR
+                        << "unrecognized delete mode \""
+                        << delete_mode
+                        << "\" ignored."
+                        << SNAP_LOG_SEND;
+                }
+            }
+
             auto const inserted(f_path_info.insert(new_path_info));
             if(!inserted.second)
             {
@@ -254,7 +289,7 @@ void file_listener::load_setup(std::string const & dir)
                 continue;
             }
 
-            if(new_path_info.get_mode() != path_mode_t::PATH_MODE_RECEIVE_ONLY)
+            if(new_path_info.get_path_mode() != path_mode_t::PATH_MODE_RECEIVE_ONLY)
             {
                 // watch the files in this directory
                 //
@@ -268,10 +303,14 @@ void file_listener::load_setup(std::string const & dir)
                 //       small amount of time (i.e. after say 5 sec.
                 //       still emit a copy event)
                 //
-                watch_file(
-                          new_path_info.get_path()
-                        , ed::SNAP_FILE_CHANGED_EVENT_UPDATED
+                ed::file_event_mask_t flags(
+                          ed::SNAP_FILE_CHANGED_EVENT_UPDATED
                         | ed::SNAP_FILE_CHANGED_EVENT_WRITE);
+                if(new_path_info.get_delete_mode() == delete_mode_t::DELETE_MODE_APPLY)
+                {
+                    flags |= ed::SNAP_FILE_CHANGED_EVENT_DELETED;
+                }
+                watch_file(new_path_info.get_path(), flags);
                 ++f_count_listens;
             }
             ++f_count_paths;
@@ -298,6 +337,13 @@ std::cerr << "--- received event: "
                   watch_event.get_watched_path()
                 , watch_event.get_filename()
                 , updated);
+    }
+
+    if((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_DELETED) != 0)
+    {
+        f_server->deleted_file(
+                  watch_event.get_watched_path()
+                , watch_event.get_filename());
     }
 }
 

@@ -589,6 +589,36 @@ void server::updated_file(
 }
 
 
+void server::deleted_file(
+      std::string const & path
+    , std::string const & filename)
+{
+    shared_file::pointer_t file;
+
+    std::string fullpath(snapdev::pathinfo::canonicalize(path, filename));
+    auto it(std::find_if(
+          f_files.begin()
+        , f_files.end()
+        , [fullpath](auto const & f)
+        {
+            return f.second->get_filename() == fullpath;
+        }));
+    if(it != f_files.end())
+    {
+        // it exists in our list, remove it, it's gone now
+        //
+        f_files.erase(it);
+    }
+
+    ed::message msg;
+    msg.set_command(snaprfs::g_name_snaprfs_cmd_rfs_file_deleted);
+    msg.set_service(communicatord::g_name_communicatord_service_public_broadcast); // see communicatord/TODO.md -- how to only broadcast to snaprfs services
+    msg.add_parameter(snaprfs::g_name_snaprfs_param_filename, filename);
+std::cerr << "--- sending message [" << msg.get_command() << "]\n";
+    f_messenger->send_message(msg);
+}
+
+
 void server::broadcast_file_changed(shared_file::pointer_t file)
 {
     // broadcast to others about the fact that file was modified so they
@@ -599,7 +629,7 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
     msg.set_service(communicatord::g_name_communicatord_service_public_broadcast); // see communicatord/TODO.md -- how to only broadcast to snaprfs services
     msg.add_parameter(snaprfs::g_name_snaprfs_param_filename, file->get_filename());
     msg.add_parameter(snaprfs::g_name_snaprfs_param_id, file->get_id());
-    msg.add_parameter(snaprfs::g_name_snaprfs_param_my_address, file->get_id());
+    msg.add_parameter(snaprfs::g_name_snaprfs_param_my_address, f_messenger->get_my_address());
 std::cerr << "--- sending message [" << msg.get_command() << "]\n";
     f_messenger->send_message(msg);
 }
@@ -613,6 +643,41 @@ void server::receive_file(std::string const & filename, std::uint32_t id, addr::
         , address
         , ed::mode_t::MODE_PLAIN));
     f_communicator->add_connection(receiver);
+}
+
+
+void server::delete_local_file(
+      std::string const & filename)
+{
+    int const r(unlink(filename.c_str()));
+    if(r != 0 && errno != ENOENT)
+    {
+        int const e(errno);
+        SNAP_LOG_MINOR
+            << "could not delete \""
+            << filename
+            << "\" (errno: "
+            << e
+            << ", "
+            << strerror(e)
+            << ")."
+            << SNAP_LOG_SEND;
+        return;
+    }
+
+    auto it(std::find_if(
+          f_files.begin()
+        , f_files.end()
+        , [filename](auto const & f)
+        {
+            return f.second->get_filename() == filename;
+        }));
+    if(it != f_files.end())
+    {
+        // it exists in our list, remove it, it's gone now
+        //
+        f_files.erase(it);
+    }
 }
 
 

@@ -74,6 +74,7 @@ public:
     void                msg_configuration_filenames(ed::message & msg);
     void                msg_copy(ed::message & msg);
     void                msg_duplicate(ed::message & msg);
+    void                msg_file_deleted(ed::message & msg);
     void                msg_list(ed::message & msg);
     void                msg_move(ed::message & msg);
     void                msg_ping(ed::message & msg);

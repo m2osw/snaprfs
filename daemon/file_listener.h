@@ -37,9 +37,16 @@ namespace rfs_daemon
 
 enum class path_mode_t
 {
-    PATH_MODE_SEND_ONLY,        // read-only, ignore if other computer sends a copy to us
+    PATH_MODE_SEND_ONLY,        // read-only, ignore if other computer sends a copy to us (default)
     PATH_MODE_RECEIVE_ONLY,     // local changes to this file are ignored, we accept copies from other(s)
     PATH_MODE_LATEST,           // send/receive to keep the latest file from anywhere
+};
+
+
+enum class delete_mode_t
+{
+    DELETE_MODE_IGNORE,         // do nothing when a file gets deleted (default)
+    DELETE_MODE_APPLY,          // apply the deletion on other systems
 };
 
 
@@ -54,14 +61,17 @@ public:
                         path_info(std::string const & path);
 
     std::string const & get_path() const;
-    void                set_mode(path_mode_t mode);
-    path_mode_t         get_mode() const;
+    void                set_path_mode(path_mode_t mode);
+    path_mode_t         get_path_mode() const;
+    void                set_delete_mode(delete_mode_t mode);
+    delete_mode_t       get_delete_mode() const;
 
     bool                operator < (path_info const & rhs) const;
 
 private:
     std::string         f_path = std::string();
-    path_mode_t         f_mode = path_mode_t::PATH_MODE_SEND_ONLY;
+    path_mode_t         f_path_mode = path_mode_t::PATH_MODE_SEND_ONLY;
+    delete_mode_t       f_delete_mode = delete_mode_t::DELETE_MODE_IGNORE;
 };
 
 

@@ -5,6 +5,7 @@ project=snaprfs
 
 [public]
 cmd_rfs_file_changed=RFS_FILE_CHANGED
+cmd_rfs_file_deleted=RFS_FILE_DELETED
 
 param_filename=filename
 param_id=id

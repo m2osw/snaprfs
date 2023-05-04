@@ -32,6 +32,11 @@
 #include    "server.h"
 
 
+// snaprfs
+//
+#include    <snaprfs/names.h>
+
+
 // advgetopt
 //
 #include    <advgetopt/validator_double.h>
@@ -71,7 +76,8 @@ messenger::messenger(server * s, advgetopt::getopt & opts)
     set_dispatcher(f_dispatcher);
 
     f_dispatcher->add_matches({
-        DISPATCHER_MATCH("RFS_FILE_CHANGED", &messenger::msg_file_changed),
+        DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_file_changed, &messenger::msg_file_changed),
+        DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_file_deleted, &messenger::msg_file_deleted),
         DISPATCHER_MATCH("RFS_CONFIGURATION_FILENAMES", &messenger::msg_configuration_filenames),
         DISPATCHER_MATCH("RFS_COPY", &messenger::msg_copy),
         DISPATCHER_MATCH("RFS_DUPLICATE", &messenger::msg_duplicate),
@@ -117,10 +123,11 @@ void messenger::stop(bool quitting)
 void messenger::msg_file_changed(ed::message & msg)
 {
     if(!msg.has_parameter("filename")
-    || !msg.has_parameter("id"))
+    || !msg.has_parameter("id")
+    || !msg.has_parameter("my_address"))
     {
         SNAP_LOG_ERROR
-            << "received RFS_FILE_CHANGED message without a filename and/or an id: \""
+            << "received RFS_FILE_CHANGED message without a filename, an id, and/or my_address: \""
             << msg
             << "\"."
             << SNAP_LOG_SEND;
@@ -134,7 +141,7 @@ void messenger::msg_file_changed(ed::message & msg)
     || remote_address.empty())
     {
         SNAP_LOG_ERROR
-            << "filename and remote_address in the RFS_FILE_CHANGED cannoe be empty."
+            << "filename and remote_address in the RFS_FILE_CHANGED cannot be empty."
             << SNAP_LOG_SEND;
         return;
     }
@@ -142,6 +149,31 @@ void messenger::msg_file_changed(ed::message & msg)
     addr::addr a(addr::string_to_addr(remote_address));
 
     f_server->receive_file(filename, id, a);
+}
+
+
+void messenger::msg_file_deleted(ed::message & msg)
+{
+    if(!msg.has_parameter("filename"))
+    {
+        SNAP_LOG_ERROR
+            << "received RFS_FILE_DELETED message without a filename: \""
+            << msg
+            << "\"."
+            << SNAP_LOG_SEND;
+        return;
+    }
+    std::string const filename(msg.get_parameter("filename"));
+
+    if(filename.empty())
+    {
+        SNAP_LOG_ERROR
+            << "filename in the RFS_FILE_DELETED cannot be empty."
+            << SNAP_LOG_SEND;
+        return;
+    }
+
+    f_server->delete_local_file(filename);
 }
 
 

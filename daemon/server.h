@@ -119,10 +119,15 @@ public:
                                   std::string const & path
                                 , std::string const & filename
                                 , bool updated);
+    void                    deleted_file(
+                                  std::string const & path
+                                , std::string const & filename);
     void                    receive_file(
                                   std::string const & filename
                                 , std::uint32_t id
                                 , addr::addr const & address);
+    void                    delete_local_file(
+                                  std::string const & filename);
 
 private:
     void                    broadcast_file_changed(shared_file::pointer_t file);
