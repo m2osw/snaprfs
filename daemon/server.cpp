@@ -631,8 +631,27 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
     msg.set_service("snaprfs");
     msg.add_parameter(snaprfs::g_name_snaprfs_param_filename, file->get_filename());
     msg.add_parameter(snaprfs::g_name_snaprfs_param_id, file->get_id());
-    msg.add_parameter(snaprfs::g_name_snaprfs_param_my_address, f_messenger->get_my_address());
-std::cerr << "--- sending message [" << msg.get_command() << "]\n";
+    std::string my_addresses;
+    if(f_data_server != nullptr)
+    {
+        addr::addr const a(f_data_server->get_address());
+        if(!my_addresses.empty())
+        {
+            my_addresses += ',';
+        }
+        my_addresses += a.to_ipv4or6_string(addr::STRING_IP_BRACKET_ADDRESS | addr::STRING_IP_PORT);
+    }
+    if(f_secure_data_server != nullptr)
+    {
+        addr::addr const a(f_secure_data_server->get_address());
+        if(!my_addresses.empty())
+        {
+            my_addresses += ',';
+        }
+        my_addresses += a.to_ipv4or6_string(addr::STRING_IP_BRACKET_ADDRESS | addr::STRING_IP_PORT);
+    }
+    msg.add_parameter(snaprfs::g_name_snaprfs_param_my_address, my_addresses);
+std::cerr << "--- sending message [" << msg.to_string() << "]\n";
     f_messenger->send_message(msg);
 }
 
