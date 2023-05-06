@@ -612,8 +612,9 @@ void server::deleted_file(
 
     ed::message msg;
     msg.set_command(snaprfs::g_name_snaprfs_cmd_rfs_file_deleted);
-    msg.set_service(communicatord::g_name_communicatord_service_public_broadcast); // see communicatord/TODO.md -- how to only broadcast to snaprfs services
-    msg.add_parameter(snaprfs::g_name_snaprfs_param_filename, filename);
+    msg.set_server(communicatord::g_name_communicatord_server_remote);
+    msg.set_service("snaprfs");
+    msg.add_parameter(snaprfs::g_name_snaprfs_param_filename, fullpath);
 std::cerr << "--- sending message [" << msg.get_command() << "]\n";
     f_messenger->send_message(msg);
 }
@@ -626,7 +627,8 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
     //
     ed::message msg;
     msg.set_command(snaprfs::g_name_snaprfs_cmd_rfs_file_changed);
-    msg.set_service(communicatord::g_name_communicatord_service_public_broadcast); // see communicatord/TODO.md -- how to only broadcast to snaprfs services
+    msg.set_server(communicatord::g_name_communicatord_server_remote);
+    msg.set_service("snaprfs");
     msg.add_parameter(snaprfs::g_name_snaprfs_param_filename, file->get_filename());
     msg.add_parameter(snaprfs::g_name_snaprfs_param_id, file->get_id());
     msg.add_parameter(snaprfs::g_name_snaprfs_param_my_address, f_messenger->get_my_address());

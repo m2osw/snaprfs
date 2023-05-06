@@ -173,6 +173,14 @@ void messenger::msg_file_deleted(ed::message & msg)
         return;
     }
 
+    if(filename[0] != '/')
+    {
+        SNAP_LOG_ERROR
+            << "filename in the RFS_FILE_DELETED must be an absolute path."
+            << SNAP_LOG_SEND;
+        return;
+    }
+
     f_server->delete_local_file(filename);
 }
 
