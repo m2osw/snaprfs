@@ -15,6 +15,8 @@
 * Create binary packages
 * Support to keep files in memory (i.e. cache)
 * Command line `rfs cp|list|version|...` to in part test that the copy works
+* Add a timeout on our TCP data connection so if receiving data is too slow
+  or does not really happen, we don't keep the connection open
 
 # Bonuses
 

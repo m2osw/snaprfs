@@ -9,6 +9,9 @@ cmd_rfs_file_deleted=RFS_FILE_DELETED
 
 param_filename=filename
 param_id=id
-param_my_address=my_address
+param_my_addresses=my_addresses
+
+scheme_rfs=rfs
+scheme_rfss=rfss
 
 # vim: syntax=dosini

@@ -125,7 +125,8 @@ public:
     void                    receive_file(
                                   std::string const & filename
                                 , std::uint32_t id
-                                , addr::addr const & address);
+                                , addr::addr const & address
+                                , bool secure);
     void                    delete_local_file(
                                   std::string const & filename);
 

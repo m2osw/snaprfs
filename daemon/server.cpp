@@ -404,7 +404,7 @@ void server::ready()
         stop(false);
         return;
     }
-    if(u.scheme() != "rfs")
+    if(u.scheme() != snaprfs::g_name_snaprfs_scheme_rfs)
     {
         SNAP_LOG_RECOVERABLE_ERROR
             << "the \"listen=...\" parameter must have an address with the scheme set to \"rfs\" not \""
@@ -464,7 +464,7 @@ void server::ready()
                 stop(false);
                 return;
             }
-            if(u.scheme() != "rfss")
+            if(u.scheme() != snaprfs::g_name_snaprfs_scheme_rfss)
             {
                 SNAP_LOG_RECOVERABLE_ERROR
                     << "the \"secure_listen=...\" parameter must have an address with the scheme set to \"rfss\" not \""
@@ -639,6 +639,8 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
         {
             my_addresses += ',';
         }
+        my_addresses += snaprfs::g_name_snaprfs_scheme_rfs;
+        my_addresses += "://";
         my_addresses += a.to_ipv4or6_string(addr::STRING_IP_BRACKET_ADDRESS | addr::STRING_IP_PORT);
     }
     if(f_secure_data_server != nullptr)
@@ -648,22 +650,46 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
         {
             my_addresses += ',';
         }
+        my_addresses += snaprfs::g_name_snaprfs_scheme_rfss;
+        my_addresses += "://";
         my_addresses += a.to_ipv4or6_string(addr::STRING_IP_BRACKET_ADDRESS | addr::STRING_IP_PORT);
     }
-    msg.add_parameter(snaprfs::g_name_snaprfs_param_my_address, my_addresses);
+    msg.add_parameter(snaprfs::g_name_snaprfs_param_my_addresses, my_addresses);
 std::cerr << "--- sending message [" << msg.to_string() << "]\n";
     f_messenger->send_message(msg);
 }
 
 
-void server::receive_file(std::string const & filename, std::uint32_t id, addr::addr const & address)
+void server::receive_file(
+      std::string const & filename
+    , std::uint32_t id
+    , addr::addr const & address
+    , bool secure)
 {
-    data_receiver::pointer_t receiver(std::make_shared<data_receiver>(
-          filename
-        , id
-        , address
-        , ed::mode_t::MODE_PLAIN));
-    f_communicator->add_connection(receiver);
+    try
+    {
+        data_receiver::pointer_t receiver(std::make_shared<data_receiver>(
+              filename
+            , id
+            , address
+            , secure
+                ? ed::mode_t::MODE_ALWAYS_SECURE
+                : ed::mode_t::MODE_PLAIN));
+        f_communicator->add_connection(receiver);
+    }
+    catch(ed::event_dispatcher_exception const & e)
+    {
+        SNAP_LOG_ERROR
+            << "could not connect to receive file \""
+            << filename
+            << "\" from \""
+            << address
+            << "\" ("
+            << e.what()
+            << ")."
+            << SNAP_LOG_SEND;
+        return;
+    }
 }
 
 

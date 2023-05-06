@@ -37,6 +37,16 @@
 #include    <snaprfs/names.h>
 
 
+// communicatord
+//
+#include    <communicatord/names.h>
+
+
+// edhttp
+//
+#include    <edhttp/uri.h>
+
+
 // advgetopt
 //
 #include    <advgetopt/validator_double.h>
@@ -122,9 +132,9 @@ void messenger::stop(bool quitting)
 
 void messenger::msg_file_changed(ed::message & msg)
 {
-    if(!msg.has_parameter("filename")
-    || !msg.has_parameter("id")
-    || !msg.has_parameter("my_address"))
+    if(!msg.has_parameter(snaprfs::g_name_snaprfs_param_filename)
+    || !msg.has_parameter(snaprfs::g_name_snaprfs_param_id)
+    || !msg.has_parameter(snaprfs::g_name_snaprfs_param_my_addresses))
     {
         SNAP_LOG_ERROR
             << "received RFS_FILE_CHANGED message without a filename, an id, and/or my_address: \""
@@ -133,12 +143,12 @@ void messenger::msg_file_changed(ed::message & msg)
             << SNAP_LOG_SEND;
         return;
     }
-    std::string const filename(msg.get_parameter("filename"));
-    std::uint32_t const id(msg.get_integer_parameter("id"));
-    std::string const remote_address(msg.get_parameter("my_address"));
+    std::string const filename(msg.get_parameter(snaprfs::g_name_snaprfs_param_filename));
+    std::uint32_t const id(msg.get_integer_parameter(snaprfs::g_name_snaprfs_param_id));
+    std::string const remote_addresses(msg.get_parameter(snaprfs::g_name_snaprfs_param_my_addresses));
 
     if(filename.empty()
-    || remote_address.empty())
+    || remote_addresses.empty())
     {
         SNAP_LOG_ERROR
             << "filename and remote_address in the RFS_FILE_CHANGED cannot be empty."
@@ -146,9 +156,69 @@ void messenger::msg_file_changed(ed::message & msg)
         return;
     }
 
-    addr::addr a(addr::string_to_addr(remote_address));
+    advgetopt::string_list_t addresses;
+    advgetopt::split_string(remote_addresses, addresses, { "," });
 
-    f_server->receive_file(filename, id, a);
+    for(auto uri : addresses)
+    {
+        edhttp::uri u;
+        if(!u.set_uri(uri, false, true))
+        {
+            SNAP_LOG_WARNING
+                << "the \"my_addresses=...\" parameter \""
+                << uri
+                << "\" includes an invalid URI: "
+                << u.get_last_error_message()
+                << "."
+                << SNAP_LOG_SEND;
+            continue;
+        }
+
+        bool const plain(u.scheme() == snaprfs::g_name_snaprfs_scheme_rfs);
+        bool const secure(u.scheme() == snaprfs::g_name_snaprfs_scheme_rfss);
+        if(!plain && !secure)
+        {
+            SNAP_LOG_WARNING
+                << "the \"my_addresses=...\" parameter \""
+                << uri
+                << "\" includes a URI with an unsupported scheme."
+                << SNAP_LOG_SEND;
+            continue;
+        }
+
+        addr::addr_range::vector_t const & ranges(u.address_ranges());
+        if(ranges.size() != 1
+        || !ranges[0].has_from()
+        || ranges[0].has_to())
+        {
+            SNAP_LOG_WARNING
+                << "the \"my_addresses=...\" parameter must have one valid IP address with the scheme set to \"rfs\" or \"rfss\". \""
+                << uri
+                << "\" is not supported."
+                << SNAP_LOG_SEND;
+            continue;
+        }
+
+        if(!secure)
+        {
+            bool secure_message(false);
+            if(msg.has_parameter(communicatord::g_name_communicatord_param_secure_remote))
+            {
+                secure_message = advgetopt::is_true(msg.get_parameter(communicatord::g_name_communicatord_param_secure_remote));
+            }
+            if(secure_message)
+            {
+                // the message went through a TLS encrypted pipe, so we do
+                // not want to send a file through a plain connection,
+                // ignore this address
+                //
+                continue;
+            }
+        }
+
+        addr::addr const a(ranges[0].get_from());
+        f_server->receive_file(filename, id, a, secure);
+    }
 }
 
 

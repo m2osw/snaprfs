@@ -50,8 +50,6 @@ public:
                             , std::uint32_t id
                             , addr::addr const & address
                             , ed::mode_t mode = ed::mode_t::MODE_PLAIN);
-    //                    data_receiver(data_receiver const &) = delete;
-    //data_receiver &     operator = (data_receiver const &) = delete;
 
     // tcp_client_connection implementation
     virtual ssize_t     write(void const * data, size_t length) override;
