@@ -536,7 +536,7 @@ void server::stop(bool quitting)
 shared_file::pointer_t server::get_file(std::uint32_t id)
 {
     auto const & it(f_files.find(id));
-    if(it != f_files.end())
+    if(it == f_files.end())
     {
         return shared_file::pointer_t();
     }
@@ -576,6 +576,11 @@ void server::updated_file(
         file = it->second;
     }
     file->set_last_updated();
+
+auto it2 = f_files.find(file->get_id());
+std::cerr << "------ updated a file... [" << fullpath
+<< "] with ptr " << file.get() << " and ID: " << file->get_id()
+<< " found: " << std::boolalpha << (it2 != f_files.end()) << "\n";
 
     if(updated)
     {

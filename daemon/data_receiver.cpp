@@ -133,54 +133,64 @@ void data_receiver::process_read()
         return;
     }
 
+    // read the header
+    //
     int r(0);
     if(f_received_bytes < sizeof(f_header))
     {
-        r = read(&f_header + f_received_bytes, sizeof(f_header) - f_received_bytes);
-        if(r == -1)
+        while(f_received_bytes < sizeof(f_header))
+        {
+            r = read(&f_header + f_received_bytes, sizeof(f_header) - f_received_bytes);
+            if(r == -1)
+            {
+                SNAP_LOG_ERROR
+                    << "an I/O error occurred while reading data header."
+                    << SNAP_LOG_SEND;
+                process_error();
+                return;
+            }
+            if(r == 0)
+            {
+                return;
+            }
+            f_received_bytes += r;
+        }
+{
+unsigned char * bytes = reinterpret_cast<unsigned char *>(&f_header);
+for(std::size_t i(0); i < sizeof(f_header); ++i)
+{
+std::cerr << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(bytes[i]) << " ";
+}
+std::cerr << "\n";
+}
+        if(f_header.f_magic[0] != 'D'
+        || f_header.f_magic[1] != 'A'
+        || f_header.f_magic[2] != 'T'
+        || f_header.f_magic[3] != 'A')
         {
             SNAP_LOG_ERROR
-                << "an I/O error occurred while reading data header."
+                << "header magic is not 'DATA'."
                 << SNAP_LOG_SEND;
             process_error();
             return;
         }
-        if(r == 0)
+        if(f_id != f_header.f_id)
         {
+            SNAP_LOG_ERROR
+                << "file id mismatched, expected \""
+                << f_id
+                << "\", receiving \""
+                << f_header.f_id
+                << "\" instead."
+                << SNAP_LOG_SEND;
+            process_error();
             return;
         }
-        f_received_bytes += r;
-        if(f_received_bytes >= sizeof(f_header))
-        {
-            if(f_header.f_magic[0] != 'D'
-            || f_header.f_magic[1] != 'A'
-            || f_header.f_magic[2] != 'T'
-            || f_header.f_magic[3] != 'A')
-            {
-                SNAP_LOG_ERROR
-                    << "header magic is not 'DATA'."
-                    << SNAP_LOG_SEND;
-                process_error();
-                return;
-            }
-            if(f_id != f_header.f_id)
-            {
-                SNAP_LOG_ERROR
-                    << "file id mismatched, expected \""
-                    << f_id
-                    << "\", receiving \""
-                    << f_header.f_id
-                    << "\" instead."
-                    << SNAP_LOG_SEND;
-                process_error();
-                return;
-            }
 
-            // while receiving, use parts (right now, we don't expect to
-            // have to use more than one part)
-            //
-            f_receiving_filename = f_filename + ".part1";
-        }
+        // while receiving, use parts (right now, we don't expect to
+        // have to use more than one part)
+        //
+        f_receiving_filename = f_filename + ".part1";
 
         // we need to also read the user & group names
         //
@@ -189,7 +199,9 @@ void data_receiver::process_read()
                         + f_header.f_groupname_length;
     }
 
-    if(f_received_bytes >= sizeof(f_header))
+    // read the user and group name which directly follow the header
+    //
+    if(f_received_bytes < f_header_size)
     {
         while(f_received_bytes < f_header_size)
         {
@@ -261,40 +273,19 @@ void data_receiver::process_read()
         }
     }
 
-    if(f_received_bytes >= f_header_size)
+    // read the file contents
+    //
+    while(f_received_bytes < f_header_size + f_header.f_size)
     {
-        while(f_received_bytes - f_header_size < f_header.f_size)
-        {
-            std::uint8_t buf[1024 * 4];
-            std::size_t const size_left(f_received_bytes - f_header_size);
-            r = read(buf, std::min(size_left, sizeof(buf)));
-            if(r == -1)
-            {
-                SNAP_LOG_ERROR
-                    << "an I/O error occurred while receiving file data for \""
-                    << f_filename
-                    << "\"."
-                    << SNAP_LOG_SEND;
-                process_error();
-                return;
-            }
-            if(r == 0)
-            {
-                return;
-            }
-            f_murmur3.add_data(buf, r);
-            f_output.write(reinterpret_cast<char const *>(buf), r);
-            f_received_bytes += r;
-        }
-    }
-
-    if(f_received_bytes - f_header_size - f_header.f_size < sizeof(f_footer))
-    {
-        r = read(&f_footer + f_received_bytes - f_header_size - f_header.f_size, sizeof(f_footer) - (f_received_bytes - f_header_size - f_header.f_size));
+        std::uint8_t buf[1024 * 4];
+        std::size_t const size_left(f_received_bytes - f_header_size);
+        r = read(buf, std::min(size_left, sizeof(buf)));
         if(r == -1)
         {
             SNAP_LOG_ERROR
-                << "an I/O error occurred while reading data footer."
+                << "an I/O error occurred while receiving file data for \""
+                << f_filename
+                << "\"."
                 << SNAP_LOG_SEND;
             process_error();
             return;
@@ -303,81 +294,104 @@ void data_receiver::process_read()
         {
             return;
         }
+        f_murmur3.add_data(buf, r);
+        f_output.write(reinterpret_cast<char const *>(buf), r);
         f_received_bytes += r;
-        if(f_received_bytes - f_header_size - f_header.f_size >= sizeof(f_footer))
+    }
+
+    // read the footer
+    //
+    if(f_received_bytes < f_header_size + f_header.f_size + sizeof(f_footer))
+    {
+        while(f_received_bytes < f_header_size + f_header.f_size + sizeof(f_footer))
         {
-            f_output.close();
-
-            if(f_footer.f_end[0] != 'E'
-            || f_footer.f_end[1] != 'N'
-            || f_footer.f_end[2] != 'D'
-            || f_footer.f_end[3] != '!')
+            r = read(&f_footer + f_received_bytes - f_header_size - f_header.f_size, sizeof(f_footer) - (f_received_bytes - f_header_size - f_header.f_size));
+            if(r == -1)
             {
                 SNAP_LOG_ERROR
-                    << "footer magic is not 'END!'."
+                    << "an I/O error occurred while reading data footer."
                     << SNAP_LOG_SEND;
                 process_error();
                 return;
             }
-
-            murmur3::hash const h(f_murmur3.flush());
-            murmur3::hash received;
-            received.set(f_footer.f_murmur3);
-            if(h != received)
+            if(r == 0)
             {
-                SNAP_LOG_ERROR
-                    << "murmur3 hashes do not match (received: "
-                    << received.to_string()
-                    << ", computed: "
-                    << h.to_string()
-                    << ")."
-                    << SNAP_LOG_SEND;
-                process_error();
                 return;
             }
+            f_received_bytes += r;
+        }
+
+        f_output.close();
+
+        if(f_footer.f_end[0] != 'E'
+        || f_footer.f_end[1] != 'N'
+        || f_footer.f_end[2] != 'D'
+        || f_footer.f_end[3] != '!')
+        {
+            SNAP_LOG_ERROR
+                << "footer magic is not 'END!'."
+                << SNAP_LOG_SEND;
+            process_error();
+            return;
+        }
+
+        murmur3::hash const h(f_murmur3.flush());
+        murmur3::hash received;
+        received.set(f_footer.f_murmur3);
+        if(h != received)
+        {
+            SNAP_LOG_ERROR
+                << "murmur3 hashes do not match (received: "
+                << received.to_string()
+                << ", computed: "
+                << h.to_string()
+                << ")."
+                << SNAP_LOG_SEND;
+            process_error();
+            return;
+        }
 
 #if 0
-            // surprise, the rename(2) is atomic and does not require us
-            // to first delete the destination file
-            //
-            r = unlink(f_filename.c_str());
-            if(r != 0
-            && errno != ENOENT)
-            {
-                int const e(errno);
-                SNAP_LOG_RECOVERABLE_ERROR
-                    << "removal of old file \""
-                    << f_filename
-                    << "\" failed with errno: "
-                    << e
-                    << ", "
-                    << strerror(e)
-                    << "."
-                    << SNAP_LOG_SEND;
-            }
+        // rename(2) is atomic and does not require us
+        // to first delete the destination file
+        //
+        r = unlink(f_filename.c_str());
+        if(r != 0
+        && errno != ENOENT)
+        {
+            int const e(errno);
+            SNAP_LOG_RECOVERABLE_ERROR
+                << "removal of old file \""
+                << f_filename
+                << "\" failed with errno: "
+                << e
+                << ", "
+                << strerror(e)
+                << "."
+                << SNAP_LOG_SEND;
+        }
 #endif
 
-            r = rename(f_receiving_filename.c_str(), f_filename.c_str());
-            if(r != 0)
-            {
-                int const e(errno);
-                SNAP_LOG_ERROR
-                    << "renaming of received file \""
-                    << f_receiving_filename
-                    << "\" to \""
-                    << f_filename
-                    << "\" failed with error: "
-                    << e
-                    << ", "
-                    << strerror(e)
-                    << "."
-                    << SNAP_LOG_SEND;
-                process_error();
-                return;
-            }
-
-            remove_from_communicator();
+        r = rename(f_receiving_filename.c_str(), f_filename.c_str());
+        if(r != 0)
+        {
+            int const e(errno);
+            SNAP_LOG_ERROR
+                << "renaming of received file \""
+                << f_receiving_filename
+                << "\" to \""
+                << f_filename
+                << "\" failed with error: "
+                << e
+                << ", "
+                << strerror(e)
+                << "."
+                << SNAP_LOG_SEND;
+            process_error();
+            return;
         }
+
+        remove_from_communicator();
     }
 }
 
@@ -421,6 +435,31 @@ void data_receiver::process_write()
 
     // process next level too
     tcp_client_connection::process_write();
+}
+
+
+void data_receiver::process_error()
+{
+    if(!f_receiving_filename.empty())
+    {
+        int const r(unlink(f_receiving_filename.c_str()));
+        if(r != 0
+        && errno != ENOENT)
+        {
+            int const e(errno);
+            SNAP_LOG_RECOVERABLE_ERROR
+                << "an error occurred trying to delete \""
+                << f_receiving_filename
+                << "\" (errno: "
+                << e
+                << " -- "
+                << strerror(e)
+                << ")."
+                << SNAP_LOG_SEND;
+        }
+    }
+
+    tcp_client_connection::process_error();
 }
 
 

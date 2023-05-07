@@ -55,6 +55,7 @@ public:
     virtual bool        is_writer() const override;
     virtual void        process_read() override;
     virtual void        process_write() override;
+    virtual void        process_error() override;
 
 private:
     std::string         f_filename = std::string();

@@ -156,19 +156,23 @@ bool data_sender::open()
     }
 
     data_header * header(reinterpret_cast<data_header *>(new char[sizeof(data_header) + pw_len + gr_len]));
+    header->f_magic[0] = 'D';
+    header->f_magic[1] = 'A';
+    header->f_magic[2] = 'T';
+    header->f_magic[3] = 'A';
     header->f_id = f_file_request.f_id;
     header->f_mode = s.st_mode;
     header->f_username_length = pw_len;
     header->f_groupname_length = gr_len;
-    memcpy(&header + 1, pw->pw_name, pw_len);
-    memcpy(reinterpret_cast<char *>(&header + 1) + pw_len, gr->gr_name, gr_len);
+    memcpy(header + 1, pw->pw_name, pw_len);
+    memcpy(reinterpret_cast<char *>(header + 1) + pw_len, gr->gr_name, gr_len);
 
     f_input.seekg(0, std::ios_base::end);
     header->f_size = f_input.tellg();
     f_input.seekg(0, std::ios_base::beg);
 
     f_size = sizeof(header) + pw_len + gr_len;
-    memcpy(f_buffer, &header, f_size);
+    memcpy(f_buffer, header, f_size);
 
     return true;
 }
