@@ -213,7 +213,8 @@ void file_listener::load_setup(std::string const & dir)
             || path == "/")
             {
                 SNAP_LOG_RECOVERABLE_ERROR
-                    << "ignoring path \""
+                    << path_name
+                    << ": ignoring path \""
                     << path
                     << "\" since its an empty string or \"/\" which are not considered valid for inotify."
                     << SNAP_LOG_SEND;
@@ -221,20 +222,20 @@ void file_listener::load_setup(std::string const & dir)
             }
 
             path_info new_path_info(path);
-            std::string const mode_name(s + "::mode");
-            if(settings->has_parameter(mode_name))
+            std::string const path_mode_name(s + "::path_mode");
+            if(settings->has_parameter(path_mode_name))
             {
-                std::string const mode(settings->get_parameter(mode_name));
-                if(mode.empty()
-                || mode == "send-only")
+                std::string const path_mode(settings->get_parameter(path_mode_name));
+                if(path_mode.empty()
+                || path_mode == "send-only")
                 {
                     new_path_info.set_path_mode(path_mode_t::PATH_MODE_SEND_ONLY);
                 }
-                else if(mode == "receive-only")
+                else if(path_mode == "receive-only")
                 {
                     new_path_info.set_path_mode(path_mode_t::PATH_MODE_RECEIVE_ONLY);
                 }
-                else if(mode == "latest")
+                else if(path_mode == "latest")
                 {
                     new_path_info.set_path_mode(path_mode_t::PATH_MODE_LATEST);
                 }
@@ -243,8 +244,8 @@ void file_listener::load_setup(std::string const & dir)
                     SNAP_LOG_RECOVERABLE_ERROR
                         << "ignoring path \""
                         << path
-                        << "\" since its mode ("
-                        << mode
+                        << "\" since its path_mode ("
+                        << path_mode
                         << ") was not recognized."
                         << SNAP_LOG_SEND;
                     continue;
@@ -272,6 +273,7 @@ void file_listener::load_setup(std::string const & dir)
                         << delete_mode
                         << "\" ignored."
                         << SNAP_LOG_SEND;
+                    continue;
                 }
             }
 
@@ -309,7 +311,7 @@ void file_listener::load_setup(std::string const & dir)
                 {
                     flags |= ed::SNAP_FILE_CHANGED_EVENT_DELETED;
                 }
-                watch_file(new_path_info.get_path(), flags);
+                watch_files(new_path_info.get_path(), flags);
                 ++f_count_listens;
             }
             ++f_count_paths;

@@ -102,6 +102,7 @@ private:
     std::uint8_t        f_buffer[1024 * 4] = {};
     std::size_t         f_size = 0;
     std::size_t         f_position = 0;
+    bool                f_sent_footer = false;
 };
 
 

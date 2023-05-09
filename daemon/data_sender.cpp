@@ -138,6 +138,15 @@ bool data_sender::open()
             << SNAP_LOG_SEND;
         return false;
     }
+    f_size = sizeof(data_header) + pw_len + gr_len;
+    if(f_size > sizeof(f_buffer))
+    {
+        f_size = 0;
+        SNAP_LOG_FATAL
+            << "header is larger than f_buffer."
+            << SNAP_LOG_SEND;
+        return false;
+    }
 
     f_input.open(f_filename);
     if(!f_input.is_open())
@@ -171,7 +180,6 @@ bool data_sender::open()
     header->f_size = f_input.tellg();
     f_input.seekg(0, std::ios_base::beg);
 
-    f_size = sizeof(header) + pw_len + gr_len;
     memcpy(f_buffer, header, f_size);
 
     return true;
@@ -275,7 +283,7 @@ void data_sender::process_write()
 
     if(!f_input.is_open())
     {
-        throw rfs::logic_error("data_sender::process_write() expects f_input to be opened. Did you call open() before adding it to the communicator?");
+        throw rfs::logic_error("data_sender::process_write() expects f_input to be open. Did you call open() before adding it to the communicator?");
     }
 
     for(;;)
@@ -304,31 +312,44 @@ void data_sender::process_write()
             }
             f_position += r;
         }
+        f_position = 0;
+        f_size = 0;
 
         if(f_input.eof())
         {
-            remove_from_communicator();
-            return;
+            if(f_sent_footer)
+            {
+                remove_from_communicator();
+                return;
+            }
+        }
+        else
+        {
+            f_input.read(reinterpret_cast<char *>(f_buffer), sizeof(f_buffer));
+            if(f_input.bad())
+            {
+                int const e(errno);
+                SNAP_LOG_ERROR
+                    << "error occurred reading data from \""
+                    << f_filename
+                    << "\"; errno: "
+                    << e
+                    << ", "
+                    << strerror(e)
+                    << "."
+                    << SNAP_LOG_SEND;
+                process_error();
+                return;
+            }
+            r = f_input.gcount();
+            if(r != 0)
+            {
+                f_murmur3.add_data(f_buffer, r);
+                f_size = r;
+            }
         }
 
-        f_position = 0;
-        f_input.read(reinterpret_cast<char *>(f_buffer), sizeof(f_buffer));
-        if(f_input.bad())
-        {
-            int const e(errno);
-            SNAP_LOG_ERROR
-                << "error occurred reading data from \""
-                << f_filename
-                << "\"; errno: "
-                << e
-                << ", "
-                << strerror(e)
-                << "."
-                << SNAP_LOG_SEND;
-            process_error();
-            return;
-        }
-        if(r == 0)
+        if(!f_sent_footer && f_size == 0)
         {
             // nothing more to read, generate the footer
             //
@@ -337,11 +358,7 @@ void data_sender::process_write()
             memcpy(footer.f_murmur3, h.get(), murmur3::HASH_SIZE);
             memcpy(f_buffer, &footer, sizeof(footer));
             f_size = sizeof(footer);
-        }
-        else
-        {
-            f_murmur3.add_data(f_buffer, r);
-            f_size = r;
+            f_sent_footer = true;
         }
     }
 }

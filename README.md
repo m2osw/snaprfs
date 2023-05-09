@@ -9,6 +9,77 @@ src="https://raw.githubusercontent.com/m2osw/snaprfs/master/doc/snaprfs-logo.png
 The `snaprfs` service is a remote file system used to seemlessly duplicate
 files between your cluster computers.
 
+# Documentation
+
+This section defines what is currently working in the existing
+implementation of the `snaprfs` service.
+
+## Service Configuration
+
+The service is setup by editing:
+
+    /etc/snaprfs/snaprfs.d/50-snaprfs.conf
+
+This is the administrator file that is expected to be edited manually. Other
+packages may install their own setup file in the same directory using
+different numbers instead of 50.
+
+**IMPORTANT NOTE:** The configuration files here do not define the set of
+                    files to be copied.
+
+The package configuration file is defined here:
+
+    /etc/snaprfs/snaprfs.conf
+
+That file includes documentation about the command line options supported
+by the `snaprfs` service. You will want to edit the `listen` and if you
+want inter-cluster connections, the `secure_listen` parameters. These
+defined a URI for the `snaprfs` service to listen to.
+
+The `communicatord_listen` parameter should already be set to the default
+which should work as is, assuming you did not change the default listen
+parameters of the communicator daemon. As a programmer, I change this
+parameter to a socket created in the BUILD directory. For example:
+
+    communicatord_listen=cd:///home/snapwebsites/snapcpp/BUILD/Debug/contrib/communicatord/tmp/communicatord.sock
+
+Just make sure that your `communicatord` service creates that Unix socket.
+
+## Watch Configuration
+
+The `snaprfs` service listens for file changes in directories--see the
+`eventdispatcher` project for the `file_changed` connection class for
+details.
+
+By default, the `snaprfs` service reads configuration files that match
+the following pattern:
+
+    /usr/share/snaprfs/watch-dirs/*.conf
+
+For dynamic definitions, it also reads files using the following pattern:
+
+    /var/lib/snaprfs/watch-dirs/*.conf
+
+The list of `watch-dirs` directories can be changed in the Service
+Configuration files by setting the `watch_dirs` parameter. The default
+looks like this:
+
+    watch_dirs=/usr/share/snaprfs/watch-dirs:/var/lib/snaprfs/watch-dirs
+
+The file format is documented in the following files installed by the
+main package:
+
+    /usr/share/snaprfs/watch-dirs/README.md
+
+
+
+
+# Ideas
+
+The following are all the ideas I threw at it when starting on this project.
+At the moment, only the features documented above are available. Other
+features may be added as time passes.
+
 ## Features
 
 The following are the main features of this file system:
@@ -150,15 +221,6 @@ The following are the main features of this file system:
   event... (i.e. we need to distinguish between changes from the outside
   and our own changes to replicate a change that happened on another
   computer.)
-
-* Parallelism
-
-  The whole tool is built to work in a multi-threaded environment. The
-  idea is to make the tasks concurrent by using workers and not one
-  thread per task.
-
-  There are a few specialized threads for other tasks such as listening
-  for new connections and communicating with clients.
 
 
 ## The Library

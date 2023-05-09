@@ -1,19 +1,15 @@
 
 # Core Implementation (SNAP-658)
 
-* Create a library to handle the feat
-* Control connection (using communicatord)
-** The settings (neighbors, etc.) are passed using communicatord
-   (note that we cannot use the fluid-settings in this project since
-   fluid-settings depends on this project)
-** Start file transmission; here is where we send the file metadata
 * TCP data connection (for encrypted transmissions)
 * UDP data connection (for non-encrypted transmissions in broadcast mode)
-* Always try to compress the file before sharing (unless under X bytes)
-* Copy files from one computer to one or more (i.e. one way)
+* Compress the file before sending unless under X bytes
 * Replicate files from any computer to any other (i.e. keep latest)
-* Create binary packages
+
+# Extensions
+
 * Support to keep files in memory (i.e. cache)
+* Implement a library to allow for ad-hoc transfers
 * Command line `rfs cp|list|version|...` to in part test that the copy works
 * Add a timeout on our TCP data connection so if receiving data is too slow
   or does not really happen, we don't keep the connection open
@@ -25,7 +21,8 @@
 * REST API (Requirement: HTTPD implementation in edhttp SNAP-695)
 * "Global settings" (duplicate `80-<name>.conf` files; dependency advgetopt,
   see SNAP-690--we may also want to duplicate `20-<name>.conf` so we have
-  globals on both sides of the admin file)
+  globals on both sides of the admin file) [I think this is void by the
+  fluid-settings]
 * Implement a set of system defaults such as copying the /var/crash from any
   computer to one "central" computer and the /var/log too.
 

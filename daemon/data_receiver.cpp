@@ -155,14 +155,7 @@ void data_receiver::process_read()
             }
             f_received_bytes += r;
         }
-{
-unsigned char * bytes = reinterpret_cast<unsigned char *>(&f_header);
-for(std::size_t i(0); i < sizeof(f_header); ++i)
-{
-std::cerr << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(bytes[i]) << " ";
-}
-std::cerr << "\n";
-}
+
         if(f_header.f_magic[0] != 'D'
         || f_header.f_magic[1] != 'A'
         || f_header.f_magic[2] != 'T'
@@ -209,7 +202,7 @@ std::cerr << "\n";
             //       512 bytes since the maximum size for each name is
             //       255 it will always be enough
             //
-            std::size_t const size_left(f_received_bytes - sizeof(f_header));
+            std::size_t const size_left(f_header_size - f_received_bytes);
             r = read(f_names.data(), std::min(size_left, f_names.size()));
             if(r == -1)
             {
@@ -278,7 +271,7 @@ std::cerr << "\n";
     while(f_received_bytes < f_header_size + f_header.f_size)
     {
         std::uint8_t buf[1024 * 4];
-        std::size_t const size_left(f_received_bytes - f_header_size);
+        std::size_t const size_left(f_header_size + f_header.f_size - f_received_bytes);
         r = read(buf, std::min(size_left, sizeof(buf)));
         if(r == -1)
         {
@@ -305,7 +298,8 @@ std::cerr << "\n";
     {
         while(f_received_bytes < f_header_size + f_header.f_size + sizeof(f_footer))
         {
-            r = read(&f_footer + f_received_bytes - f_header_size - f_header.f_size, sizeof(f_footer) - (f_received_bytes - f_header_size - f_header.f_size));
+            std::size_t const bytes_read(f_received_bytes - f_header_size - f_header.f_size);
+            r = read(&f_footer + bytes_read, sizeof(f_footer) - bytes_read);
             if(r == -1)
             {
                 SNAP_LOG_ERROR
@@ -351,27 +345,9 @@ std::cerr << "\n";
             return;
         }
 
-#if 0
-        // rename(2) is atomic and does not require us
-        // to first delete the destination file
+        // rename(2) is atomic and does not require us to first delete
+        // the destination file
         //
-        r = unlink(f_filename.c_str());
-        if(r != 0
-        && errno != ENOENT)
-        {
-            int const e(errno);
-            SNAP_LOG_RECOVERABLE_ERROR
-                << "removal of old file \""
-                << f_filename
-                << "\" failed with errno: "
-                << e
-                << ", "
-                << strerror(e)
-                << "."
-                << SNAP_LOG_SEND;
-        }
-#endif
-
         r = rename(f_receiving_filename.c_str(), f_filename.c_str());
         if(r != 0)
         {
