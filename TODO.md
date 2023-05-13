@@ -5,6 +5,9 @@
 * UDP data connection (for non-encrypted transmissions in broadcast mode)
 * Compress the file before sending unless under X bytes
 * Replicate files from any computer to any other (i.e. keep latest)
+* Make sure watch-dirs parent/child + recursive do not overlap
+* Make sure all parts directories are not included in watch-dirs
+* Start only after mount is done (TBD possible with systemctl?)
 
 # Extensions
 

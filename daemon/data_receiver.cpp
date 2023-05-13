@@ -39,6 +39,7 @@
 //
 #include    <snapdev/as_root.h>
 #include    <snapdev/chownnm.h>
+#include    <snapdev/pathinfo.h>
 
 
 // last include
@@ -49,23 +50,37 @@
 
 namespace rfs_daemon
 {
+namespace
+{
+int         g_identifier = 0;
+}
 
 
 
 data_receiver::data_receiver(
           std::string const & filename
         , std::uint32_t id
+        , std::string const & path_part
         , addr::addr const & address
         , ed::mode_t mode)
     : tcp_client_connection(address, mode)
     , f_filename(filename)
     , f_id(id)
+    , f_path_part(path_part)
 {
     set_name("data_receiver");
 
     if(f_filename.empty())
     {
         throw rfs::missing_parameter("filename cannot be empty in data_receiver");
+    }
+    if(f_path_part.empty())
+    {
+        throw rfs::missing_parameter("path_part cannot be empty in data_receiver");
+    }
+    if(f_path_part.back() != '/')
+    {
+        f_path_part += '/';
     }
 
     // send info about the file we want to download to the sender
@@ -180,10 +195,16 @@ void data_receiver::process_read()
             return;
         }
 
-        // while receiving, use parts (right now, we don't expect to
-        // have to use more than one part)
+        // while receiving, use a temporary file
         //
-        f_receiving_filename = f_filename + ".part1";
+        // the f_path_part has an ending '/' (see constructor)
+        //
+        ++g_identifier;
+        f_receiving_filename = f_path_part;
+        f_receiving_filename += snapdev::pathinfo::basename(f_filename);
+        f_receiving_filename += '-';
+        f_receiving_filename += std::to_string(g_identifier);
+        f_receiving_filename += ".tmp";
 
         // we need to also read the user & group names
         //

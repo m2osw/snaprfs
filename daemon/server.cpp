@@ -131,6 +131,7 @@
 
 // snapdev
 //
+#include    <snapdev/mounts.h>
 #include    <snapdev/pathinfo.h>
 #include    <snapdev/stringize.h>
 
@@ -175,6 +176,13 @@ advgetopt::option const g_command_line_options[] =
               advgetopt::GETOPT_FLAG_GROUP_OPTIONS
             , advgetopt::GETOPT_FLAG_REQUIRED>())
         , advgetopt::Help("certificate for the data server connection.")
+    ),
+    advgetopt::define_option(
+          advgetopt::Name("parts")
+        , advgetopt::Flags(advgetopt::all_flags<
+              advgetopt::GETOPT_FLAG_GROUP_OPTIONS
+            , advgetopt::GETOPT_FLAG_REQUIRED>())
+        , advgetopt::Help("list of directories where downloaded parts (temporary files) are saved.")
     ),
     advgetopt::define_option(
           advgetopt::Name("private-key")
@@ -273,6 +281,24 @@ private:
 
 
 
+snapdev::mounts *               g_mounts = nullptr;
+
+
+snapdev::mounts const & get_mounts()
+{
+    // TODO: add a duration for the mounts cache so it gets refreshed once
+    //       in a while (especially if snaprfs starts before all the mount
+    //       points are up)
+    //
+    if(g_mounts == nullptr)
+    {
+        g_mounts = new snapdev::mounts();
+    }
+    return *g_mounts;
+}
+
+
+
 } // no name namespace
 
 
@@ -354,6 +380,15 @@ server::server(int argc, char * argv[])
     }
 
     f_messenger->process_communicatord_options();
+
+    if(f_opts.is_defined("parts"))
+    {
+        snapdev::tokenize_string(f_parts, f_opts.get_string("parts"), ":");
+    }
+    if(f_parts.empty())
+    {
+        f_parts.push_back("/var/lib/snaprfs/parts");
+    }
 }
 
 
@@ -670,11 +705,67 @@ void server::receive_file(
     , addr::addr const & address
     , bool secure)
 {
+    // make sure we can receive this file
+    //
+    std::string const & path(snapdev::pathinfo::dirname(filename));
+    path_info const * p(f_file_listener->find_path_info(path));
+    if(p == nullptr)
+    {
+        SNAP_LOG_VERBOSE
+            << "path info for \""
+            << filename
+            << "\" was not found on this computer. Ignore transfer order."
+            << SNAP_LOG_SEND;
+        return;
+    }
+    switch(p->get_path_mode())
+    {
+    case path_mode_t::PATH_MODE_RECEIVE_ONLY:
+    case path_mode_t::PATH_MODE_LATEST:
+        break;
+
+    default:
+        SNAP_LOG_VERBOSE
+            << "path info for \""
+            << filename
+            << "\" says we cannot receive this file. Ignoring."
+            << SNAP_LOG_SEND;
+        return;
+
+    }
+    std::string path_part(p->get_path_part());
+    if(path_part.empty())
+    {
+        // find a mount point for that path to the file we want to transfer
+        //
+        snapdev::mount_entry const * m(snapdev::find_mount(get_mounts(), path));
+        if(m != nullptr)
+        {
+            // use a part directory with the same mount point if possible
+            //
+            for(auto const & part : f_parts)
+            {
+                if(snapdev::pathinfo::is_child_path(m->get_dir(), part))
+                {
+                    path_part = part;
+                    break;
+                }
+            }
+        }
+        if(path_part.empty())
+        {
+            // use default if no mount point matched
+            //
+            path_part = *f_parts.begin();
+        }
+    }
+
     try
     {
         data_receiver::pointer_t receiver(std::make_shared<data_receiver>(
               filename
             , id
+            , path_part
             , address
             , secure
                 ? ed::mode_t::MODE_ALWAYS_SECURE
@@ -700,6 +791,34 @@ void server::receive_file(
 void server::delete_local_file(
       std::string const & filename)
 {
+    // make sure we can delete this file
+    //
+    std::string const & path(snapdev::pathinfo::dirname(filename));
+    path_info const * p(f_file_listener->find_path_info(path));
+    if(p == nullptr)
+    {
+        SNAP_LOG_VERBOSE
+            << "path info for \""
+            << filename
+            << "\" was not found on this computer. Ignore delete order."
+            << SNAP_LOG_SEND;
+        return;
+    }
+    switch(p->get_delete_mode())
+    {
+    case delete_mode_t::DELETE_MODE_APPLY:
+        break;
+
+    default:
+        SNAP_LOG_VERBOSE
+            << "path info for \""
+            << filename
+            << "\" says we cannot delete this file. Ignoring."
+            << SNAP_LOG_SEND;
+        return;
+
+    }
+
     int const r(unlink(filename.c_str()));
     if(r != 0 && errno != ENOENT)
     {

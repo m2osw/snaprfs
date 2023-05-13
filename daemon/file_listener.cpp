@@ -74,6 +74,52 @@ std::string const & path_info::get_path() const
 }
 
 
+/** \brief Count the number of matching segments.
+ *
+ * This function compares \p path with this path_info object path
+ * (f_path). It counts the number of segments that match.
+ *
+ * \warning
+ * At this time, the function expects both paths to be canonicalized. This
+ * means that no two slashes (/) follow each other and no "/./" or "/../"
+ * are found in the path.
+ *
+ * \param[in] path  The path to match against this path_info f_path.
+ */
+int path_info::match_path(std::string const & path) const
+{
+    int result(0);
+    for(std::size_t idx(0); ; ++idx)
+    {
+        if(idx >= path.length()
+        && idx >= f_path.length())
+        {
+            if(idx > 0 && path[idx - 1] != '/')
+            {
+                ++result;
+            }
+            return result;
+        }
+
+        if(idx >= path.length()
+        || idx >= f_path.length())
+        {
+            return result;
+        }
+
+        if(path[idx] != f_path[idx])
+        {
+            return result;
+        }
+
+        if(path[idx] == '/' && idx > 0)
+        {
+            ++result;
+        }
+    }
+}
+
+
 void path_info::set_path_mode(path_mode_t path_mode)
 {
     f_path_mode = path_mode;
@@ -95,6 +141,18 @@ void path_info::set_delete_mode(delete_mode_t delete_mode)
 delete_mode_t path_info::get_delete_mode() const
 {
     return f_delete_mode;
+}
+
+
+void path_info::set_path_part(std::string const & path_part)
+{
+    f_path_part = path_part;
+}
+
+
+std::string const & path_info::get_path_part() const
+{
+    return f_path_part;
 }
 
 
@@ -277,6 +335,12 @@ void file_listener::load_setup(std::string const & dir)
                 }
             }
 
+            std::string const path_part_name(s + "::path_part");
+            if(settings->has_parameter(path_part_name))
+            {
+                new_path_info.set_path_part(settings->get_parameter(path_part_name));
+            }
+
             auto const inserted(f_path_info.insert(new_path_info));
             if(!inserted.second)
             {
@@ -317,6 +381,31 @@ void file_listener::load_setup(std::string const & dir)
             ++f_count_paths;
         }
     }
+}
+
+
+path_info const * file_listener::find_path_info(std::string const & path) const
+{
+    std::set<path_info>::iterator it;
+    int best_match(0);
+    //for(auto const & p : f_path_info)
+    for(std::set<path_info>::iterator p(f_path_info.begin()); p != f_path_info.end(); ++p)
+    {
+        int const count(p->match_path(path));
+        if(count > best_match)
+        {
+            best_match = count;
+            it = p;
+        }
+    }
+    if(best_match > 0)
+    {
+        // found a best match, return its pointer
+        //
+        return &*it;
+    }
+
+    return nullptr;
 }
 
 

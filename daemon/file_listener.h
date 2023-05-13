@@ -60,10 +60,13 @@ public:
                         path_info(std::string const & path);
 
     std::string const & get_path() const;
+    int                 match_path(std::string const & path) const;
     void                set_path_mode(path_mode_t mode);
     path_mode_t         get_path_mode() const;
     void                set_delete_mode(delete_mode_t mode);
     delete_mode_t       get_delete_mode() const;
+    void                set_path_part(std::string const & mode);
+    std::string const & get_path_part() const;
 
     bool                operator < (path_info const & rhs) const;
 
@@ -71,6 +74,7 @@ private:
     std::string         f_path = std::string();
     path_mode_t         f_path_mode = path_mode_t::PATH_MODE_SEND_ONLY;
     delete_mode_t       f_delete_mode = delete_mode_t::DELETE_MODE_IGNORE;
+    std::string         f_path_part = std::string();
 };
 
 
@@ -78,12 +82,16 @@ class file_listener
     : public ed::file_changed
 {
 public:
+    typedef std::shared_ptr<file_listener>  pointer_t;
+
                         file_listener(
                               server * s
                             , std::string const & watch_dir);
                         file_listener(file_listener const &) = delete;
     file_listener const &
                         operator = (file_listener const &) = delete;
+
+    path_info const *   find_path_info(std::string const & path) const;
 
     // file_changed implementation
     //

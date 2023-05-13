@@ -212,6 +212,9 @@ void messenger::msg_file_changed(ed::message & msg)
                 // not want to send a file through a plain connection,
                 // ignore this address
                 //
+                SNAP_LOG_MINOR
+                    << "the file request transfer was sent through a secure communicator daemon, it has to have a secure URI to transfer the file."
+                    << SNAP_LOG_SEND;
                 continue;
             }
         }
