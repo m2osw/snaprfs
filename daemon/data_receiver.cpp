@@ -42,6 +42,11 @@
 #include    <snapdev/pathinfo.h>
 
 
+// C
+//
+#include    <fcntl.h>
+
+
 // last include
 //
 #include    <snapdev/poison.h>
@@ -365,6 +370,20 @@ void data_receiver::process_read()
             process_error();
             return;
         }
+
+        timespec times[2] = {
+            // atime
+            {
+                .tv_sec = 0,
+                .tv_nsec = UTIME_OMIT,
+            },
+            // mtime
+            {
+                .tv_sec = static_cast<time_t>(f_header.f_mtime_sec),
+                .tv_nsec = static_cast<long int>(f_header.f_mtime_nsec),
+            },
+        };
+        utimensat(AT_FDCWD, f_receiving_filename.c_str(), times, 0);
 
         // rename(2) is atomic and does not require us to first delete
         // the destination file

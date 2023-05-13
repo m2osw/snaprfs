@@ -22,6 +22,8 @@
 * Generate events on file changes
 * Count orders for stats purposes (i.e. how many reads/writes/etc.)
 * REST API (Requirement: HTTPD implementation in edhttp SNAP-695)
+* Warning on unrecognized options in watch-dirs .conf files (so that way the
+  administrator knows something is misspelled).
 * "Global settings" (duplicate `80-<name>.conf` files; dependency advgetopt,
   see SNAP-690--we may also want to duplicate `20-<name>.conf` so we have
   globals on both sides of the admin file) [I think this is void by the

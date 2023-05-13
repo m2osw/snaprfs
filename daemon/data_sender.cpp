@@ -171,6 +171,8 @@ bool data_sender::open()
     header->f_magic[3] = 'A';
     header->f_id = f_file_request.f_id;
     header->f_mode = s.st_mode;
+    header->f_mtime_sec = s.st_mtim.tv_sec;
+    header->f_mtime_nsec = s.st_mtim.tv_nsec;
     header->f_username_length = pw_len;
     header->f_groupname_length = gr_len;
     memcpy(header + 1, pw->pw_name, pw_len);

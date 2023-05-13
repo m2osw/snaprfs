@@ -728,7 +728,7 @@ void server::receive_file(
         SNAP_LOG_VERBOSE
             << "path info for \""
             << filename
-            << "\" says we cannot receive this file. Ignoring."
+            << "\" says we cannot receive this file. Ignore transfer order."
             << SNAP_LOG_SEND;
         return;
 
@@ -813,7 +813,7 @@ void server::delete_local_file(
         SNAP_LOG_VERBOSE
             << "path info for \""
             << filename
-            << "\" says we cannot delete this file. Ignoring."
+            << "\" says we cannot delete this file. Ignore delete order."
             << SNAP_LOG_SEND;
         return;
 

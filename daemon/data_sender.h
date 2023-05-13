@@ -53,6 +53,8 @@ struct data_header
 {
     std::uint8_t        f_magic[4] = { 'D', 'A', 'T', 'A' };
     std::uint32_t       f_id = 0;
+    std::uint64_t       f_mtime_sec = 0;            // a timespec uses time_t and long, here we make sure it is 64 bits always
+    std::uint64_t       f_mtime_nsec = 0;
     std::uint32_t       f_size = 0;
     std::uint16_t       f_mode = 0;
     std::uint8_t        f_username_length = 0;
