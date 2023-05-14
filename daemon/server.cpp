@@ -178,11 +178,11 @@ advgetopt::option const g_command_line_options[] =
         , advgetopt::Help("certificate for the data server connection.")
     ),
     advgetopt::define_option(
-          advgetopt::Name("parts")
+          advgetopt::Name("temp-dirs")
         , advgetopt::Flags(advgetopt::all_flags<
               advgetopt::GETOPT_FLAG_GROUP_OPTIONS
             , advgetopt::GETOPT_FLAG_REQUIRED>())
-        , advgetopt::Help("list of directories where downloaded parts (temporary files) are saved.")
+        , advgetopt::Help("list of directories where transferred files are saved temporarilly.")
     ),
     advgetopt::define_option(
           advgetopt::Name("private-key")
@@ -381,13 +381,13 @@ server::server(int argc, char * argv[])
 
     f_messenger->process_communicatord_options();
 
-    if(f_opts.is_defined("parts"))
+    if(f_opts.is_defined("temp_dirs"))
     {
-        snapdev::tokenize_string(f_parts, f_opts.get_string("parts"), ":");
+        snapdev::tokenize_string(f_temp_dirs, f_opts.get_string("temp_dirs"), ":");
     }
-    if(f_parts.empty())
+    if(f_temp_dirs.empty())
     {
-        f_parts.push_back("/var/lib/snaprfs/parts");
+        f_temp_dirs.push_back("/var/lib/snaprfs/tmp");
     }
 }
 
@@ -743,7 +743,7 @@ void server::receive_file(
         {
             // use a part directory with the same mount point if possible
             //
-            for(auto const & part : f_parts)
+            for(auto const & part : f_temp_dirs)
             {
                 if(snapdev::pathinfo::is_child_path(m->get_dir(), part))
                 {
@@ -756,7 +756,7 @@ void server::receive_file(
         {
             // use default if no mount point matched
             //
-            path_part = *f_parts.begin();
+            path_part = *f_temp_dirs.begin();
         }
     }
 

@@ -142,7 +142,7 @@ private:
     data_server::pointer_t  f_secure_data_server = data_server::pointer_t();
     bool                    f_force_restart = false;
     shared_file::map_t      f_files = shared_file::map_t();
-    std::list<std::string>  f_parts = std::list<std::string>();
+    std::list<std::string>  f_temp_dirs = std::list<std::string>();
 };
 
 
