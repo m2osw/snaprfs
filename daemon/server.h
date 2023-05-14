@@ -81,6 +81,7 @@ class shared_file
 {
 public:
     typedef std::shared_ptr<shared_file>        pointer_t;
+    typedef std::set<pointer_t>                 set_t;
     typedef std::map<std::uint32_t, pointer_t>  map_t;
 
                             shared_file(std::string const & filename);
@@ -90,6 +91,8 @@ public:
     void                    set_received();
     snapdev::timespec_ex    get_received() const;
     void                    set_last_updated();
+    snapdev::timespec_ex const &
+                            get_last_updated() const;
     void                    set_start_sharing();
     bool                    was_updated() const;
 
@@ -115,12 +118,9 @@ public:
 
     shared_file::pointer_t  get_file(std::uint32_t id);
     void                    updated_file(
-                                  std::string const & path
-                                , std::string const & filename
+                                  std::string const & fullpath
                                 , bool updated);
-    void                    deleted_file(
-                                  std::string const & path
-                                , std::string const & filename);
+    void                    deleted_file(std::string const & fullpath);
     void                    receive_file(
                                   std::string const & filename
                                 , std::uint32_t id
@@ -128,10 +128,9 @@ public:
                                 , bool secure);
     void                    delete_local_file(
                                   std::string const & filename);
-
-private:
     void                    broadcast_file_changed(shared_file::pointer_t file);
 
+private:
     advgetopt::getopt       f_opts;
     ed::communicator::pointer_t
                             f_communicator = ed::communicator::pointer_t();

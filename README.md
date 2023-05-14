@@ -9,6 +9,10 @@ src="https://raw.githubusercontent.com/m2osw/snaprfs/master/doc/snaprfs-logo.png
 The `snaprfs` service is a remote file system used to seemlessly duplicate
 files between your cluster computers.
 
+It supports duplicate regular files, directories, and symbolic links. The
+service attempts to keep the ownership, mode, and modification time
+intact between systems.
+
 # Documentation
 
 This section defines what is currently working in the existing

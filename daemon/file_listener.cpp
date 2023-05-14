@@ -411,29 +411,55 @@ path_info const * file_listener::find_path_info(std::string const & path) const
 
 void file_listener::process_event(ed::file_event const & watch_event)
 {
-std::cerr << "--- received event: "
-<< watch_event.get_watched_path()
-<< " -- "
-<< std::hex << watch_event.get_events() << std::dec
-<< " -- "
-<< watch_event.get_filename()
+std::cerr << "--- received event: " << watch_event.get_watched_path()
+<< " -- " << std::hex << watch_event.get_events() << std::dec
+<< " -- " << watch_event.get_filename()
 << "\n";
+
+    std::string const fullpath(snapdev::pathinfo::canonicalize(
+                                      watch_event.get_watched_path()
+                                    , watch_event.get_filename()));
+
+    struct stat s;
+    if(stat(fullpath.c_str(), &s) == 0)
+    {
+        switch(s.st_mode & (S_IFMT))
+        {
+        case S_IFREG:
+        case S_IFDIR:
+        case S_IFLNK:
+            break;
+
+        default:
+            // ignore character, block, fifo, ... type of files
+            //
+            // last time I checked the format numbers were defined in:
+            //     /usr/include/x86_64-linux-gnu/bits/stat.h
+            //
+            SNAP_LOG_WARNING
+                << "found a non-regular file, directory, or symbolic link \""
+                << watch_event.get_filename()
+                << "\" in directory \""
+                << watch_event.get_watched_path()
+                << "\" which is snaprfs cannot handle (type: "
+                << std::oct << (s.st_mode & (S_IFMT))
+                << " in octal)."
+                << SNAP_LOG_SEND;
+            return;
+
+        }
+    }
 
     bool const updated((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_UPDATED) != 0);
     bool const modified((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_WRITE) != 0);
     if(updated || modified)
     {
-        f_server->updated_file(
-                  watch_event.get_watched_path()
-                , watch_event.get_filename()
-                , updated);
+        f_server->updated_file(fullpath, updated);
     }
 
     if((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_DELETED) != 0)
     {
-        f_server->deleted_file(
-                  watch_event.get_watched_path()
-                , watch_event.get_filename());
+        f_server->deleted_file(fullpath);
     }
 }
 

@@ -247,13 +247,8 @@ void data_receiver::process_read()
             f_received_bytes += r;
         }
 
-        // we may not own the file (we are "snaprfs", after all), so we become
-        // root, open the file, change the ownership and mode, we can then
-        // drop back as "snaprfs" and write the content which we receive
-        // afterward to the file without being root
+        // note: we receive the file as the snaprfs user
         //
-        snapdev::as_root safe_root;
-
         f_output.open(
                   f_receiving_filename
                 , std::ios_base::trunc | std::ios_base::binary | std::ios_base::ate);
@@ -271,24 +266,6 @@ void data_receiver::process_read()
                 << SNAP_LOG_SEND;
             process_error();
             return;
-        }
-
-        std::string const username(f_names.data(), f_header.f_username_length);
-        std::string const groupname(f_names.data() + f_header.f_username_length, f_header.f_groupname_length);
-        if(snapdev::chownnm(f_receiving_filename, username, groupname) != 0)
-        {
-            int const e(errno);
-            SNAP_LOG_RECOVERABLE_ERROR
-                << "could not change user and/or group name of output file \""
-                << f_receiving_filename
-                << "\" (errno: "
-                << e
-                << ", "
-                << strerror(e)
-                << ")."
-                << SNAP_LOG_SEND;
-            // continue in this case, although the file may not be readable
-            // by the service owning this file as a result...
         }
     }
 
@@ -371,6 +348,52 @@ void data_receiver::process_read()
             return;
         }
 
+        // we may not own the file (we are "snaprfs", after all), so we become
+        // root and change the ownership and mode, and finally rename the
+        // file so it gets copied to a new location; we can then
+        // drop back as "snaprfs"
+        //
+        snapdev::as_root safe_root;
+
+        // TODO: I think that the user/group names should be changed
+        //       just before the rename (just before the utimensat()
+        //       actually) since the file is considered invalid until
+        //       verified otherwise by the murmur3 checksum
+        //
+        std::string const username(f_names.data(), f_header.f_username_length);
+        std::string const groupname(f_names.data() + f_header.f_username_length, f_header.f_groupname_length);
+        if(snapdev::chownnm(f_receiving_filename, username, groupname) != 0)
+        {
+            int const e(errno);
+            SNAP_LOG_RECOVERABLE_ERROR
+                << "could not change user and/or group name of output file \""
+                << f_receiving_filename
+                << "\" (errno: "
+                << e
+                << ", "
+                << strerror(e)
+                << ")."
+                << SNAP_LOG_SEND;
+            // continue in this case, although the file may not be readable
+            // by the service owning this file as a result...
+        }
+
+        if(chmod(f_receiving_filename.c_str(), f_header.f_mode) != 0)
+        {
+            int const e(errno);
+            SNAP_LOG_RECOVERABLE_ERROR
+                << "could not change mode (chmod) of output file \""
+                << f_receiving_filename
+                << "\" (errno: "
+                << e
+                << ", "
+                << strerror(e)
+                << ")."
+                << SNAP_LOG_SEND;
+            // continue in this case, although the file may not be readable
+            // by the service owning this file as a result...
+        }
+
         timespec times[2] = {
             // atime
             {
@@ -383,7 +406,21 @@ void data_receiver::process_read()
                 .tv_nsec = static_cast<long int>(f_header.f_mtime_nsec),
             },
         };
-        utimensat(AT_FDCWD, f_receiving_filename.c_str(), times, 0);
+        if(utimensat(AT_FDCWD, f_receiving_filename.c_str(), times, 0) != 0)
+        {
+            int const e(errno);
+            SNAP_LOG_MAJOR
+                << "could not change modification time of output file \""
+                << f_receiving_filename
+                << "\" (errno: "
+                << e
+                << ", "
+                << strerror(e)
+                << ")."
+                << SNAP_LOG_SEND;
+            // continue in this case, although the file may not be readable
+            // by the service owning this file as a result...
+        }
 
         // rename(2) is atomic and does not require us to first delete
         // the destination file

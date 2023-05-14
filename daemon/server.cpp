@@ -199,6 +199,14 @@ advgetopt::option const g_command_line_options[] =
         , advgetopt::Help("URL to listen on with TLS for the snaprfs data channel.")
     ),
     advgetopt::define_option(
+          advgetopt::Name("transfer-after-sec")
+        , advgetopt::Flags(advgetopt::all_flags<
+              advgetopt::GETOPT_FLAG_GROUP_OPTIONS
+            , advgetopt::GETOPT_FLAG_REQUIRED>())
+        , advgetopt::Help("number of seconds after which a modified file gets transferred even if not closed.")
+        , advgetopt::DefaultValue("10")
+    ),
+    advgetopt::define_option(
           advgetopt::Name("watch-dirs")
         , advgetopt::Flags(advgetopt::all_flags<
               advgetopt::GETOPT_FLAG_GROUP_OPTIONS
@@ -268,16 +276,135 @@ advgetopt::options_environment const g_options_environment =
 
 
 
+
+
+
 class modified_timer
     : public ed::timer
 {
 public:
     typedef std::shared_ptr<modified_timer> pointer_t;
 
-                                modified_timer();
+                                modified_timer(server * s, std::uint32_t transfer_after_sec);
+                                modified_timer(modified_timer const &) = delete;
+    modified_timer &            operator = (modified_timer const &) = delete;
+
+    void                        add_file(shared_file::pointer_t file);
+    void                        remove_file(shared_file::pointer_t file);
+
+    // timer implementation
+    virtual void                process_timeout() override;
 
 private:
+    server *                    f_server = nullptr;
+    shared_file::set_t          f_modified_files = shared_file::set_t();
+    snapdev::timespec_ex        f_transfer_after_sec = snapdev::timespec_ex();
 };
+
+
+modified_timer::pointer_t       g_modified_timer = modified_timer::pointer_t();
+
+
+modified_timer::modified_timer(server * s, std::uint32_t transfer_after_sec)
+    : timer(1'000'000LL)
+    , f_server(s)
+    , f_transfer_after_sec(std::max(3L, std::int64_t(transfer_after_sec)), 0) // minimum is 3 seconds
+{
+}
+
+
+void modified_timer::add_file(shared_file::pointer_t file)
+{
+    f_modified_files.insert(file);
+
+    set_enable(true);
+}
+
+
+void modified_timer::remove_file(shared_file::pointer_t file)
+{
+    auto it(f_modified_files.find(file));
+    if(it == f_modified_files.end())
+    {
+        return;
+    }
+
+    f_modified_files.erase(it);
+
+    if(f_modified_files.empty())
+    {
+        set_enable(false);
+    }
+}
+
+
+void modified_timer::process_timeout()
+{
+    // we have two timestamp and a duration:
+    //   - when file was last updated (LU)
+    //   - now (N)
+    //   - transfer after seconds (TA)
+    //
+    // this is used as:
+    //
+    //   LU + TA <= N
+    //
+    // to avoid as much math as possible inside the loop, we compute
+    // a parameter called threshold (T) from the equation above:
+    //
+    //   LU <= N - TA
+    //
+    // so:
+    //
+    //   T = N - TA
+    //
+    // and as a result, the loop just does:
+    //
+    //   LU <= T
+    //
+    snapdev::timespec_ex const threshold(snapdev::timespec_ex::gettime() - f_transfer_after_sec);
+    for(auto m(f_modified_files.begin()); m != f_modified_files.end(); )
+    {
+        // needs to be transferred at all?
+        //
+        if((*m)->was_updated())
+        {
+            if((*m)->get_last_updated() <= threshold)
+            {
+                f_server->broadcast_file_changed(*m);
+                m = f_modified_files.erase(m);
+            }
+            else
+            {
+                // not time yet
+                //
+                // Note: this means if updated within f_transfer_after_sec,
+                //       it does not get transferred
+                //
+                //       this goes on until such changes stops for at least
+                //       f_transfer_after_sec
+                //
+                //       at some point we may want to consider adding a way
+                //       to share the file sooner if so many changes happen
+                //       so quickly (but then we may transfer a file which
+                //       changes as we transfer it...)
+                //
+                ++m;
+            }
+        }
+        else
+        {
+            // somehow it is not marked as updated, forget about it immediately
+            //
+            m = f_modified_files.erase(m);
+        }
+    }
+}
+
+
+
+
+
 
 
 
@@ -348,6 +475,12 @@ void shared_file::set_last_updated()
 }
 
 
+snapdev::timespec_ex const & shared_file::get_last_updated() const
+{
+    return f_last_updated;
+}
+
+
 void shared_file::set_start_sharing()
 {
     f_start_sharing = snapdev::timespec_ex::gettime();
@@ -407,10 +540,15 @@ void server::ready()
     //      connection to the communicatord service; then remove this
     //      test since we will then be able to reconnect
     //
-    if(f_file_listener != nullptr)
+    if(g_modified_timer != nullptr
+    || f_file_listener != nullptr)
     {
         return;
     }
+
+    std::uint32_t const transfer_after_sec(f_opts.get_long("transfer-after-sec"));
+    g_modified_timer = std::make_shared<modified_timer>(this, transfer_after_sec);
+    f_communicator->add_connection(g_modified_timer);
 
     // start listening for file changes only once we are connected
     // to the communicator daemon
@@ -581,13 +719,11 @@ shared_file::pointer_t server::get_file(std::uint32_t id)
 
 
 void server::updated_file(
-      std::string const & path
-    , std::string const & filename
+      std::string const & fullpath
     , bool updated)
 {
     shared_file::pointer_t file;
 
-    std::string fullpath(snapdev::pathinfo::canonicalize(path, filename));
     auto it(std::find_if(
           f_files.begin()
         , f_files.end()
@@ -612,10 +748,11 @@ void server::updated_file(
     }
     file->set_last_updated();
 
-auto it2 = f_files.find(file->get_id());
-std::cerr << "------ updated a file... [" << fullpath
-<< "] with ptr " << file.get() << " and ID: " << file->get_id()
-<< " found: " << std::boolalpha << (it2 != f_files.end()) << "\n";
+//auto it2 = f_files.find(file->get_id());
+//std::cerr << "------ " << (updated ? "updated" : "wrote to")
+//<< " a file... [" << fullpath
+//<< "] with ptr " << file.get() << " and ID: " << file->get_id()
+//<< " found: " << std::boolalpha << (it2 != f_files.end()) << "\n";
 
     if(updated)
     {
@@ -625,16 +762,17 @@ std::cerr << "------ updated a file... [" << fullpath
         //
         broadcast_file_changed(file);
     }
+    else
+    {
+        g_modified_timer->add_file(file);
+    }
 }
 
 
-void server::deleted_file(
-      std::string const & path
-    , std::string const & filename)
+void server::deleted_file(std::string const & fullpath)
 {
     shared_file::pointer_t file;
 
-    std::string fullpath(snapdev::pathinfo::canonicalize(path, filename));
     auto it(std::find_if(
           f_files.begin()
         , f_files.end()
@@ -654,13 +792,15 @@ void server::deleted_file(
     msg.set_server(communicatord::g_name_communicatord_server_remote);
     msg.set_service("snaprfs");
     msg.add_parameter(snaprfs::g_name_snaprfs_param_filename, fullpath);
-std::cerr << "--- sending message [" << msg.get_command() << "]\n";
+//std::cerr << "--- sending message [" << msg.get_command() << "]\n";
     f_messenger->send_message(msg);
 }
 
 
 void server::broadcast_file_changed(shared_file::pointer_t file)
 {
+    file->set_start_sharing();
+
     // broadcast to others about the fact that file was modified so they
     // can download the file from us
     //
@@ -694,7 +834,7 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
         my_addresses += a.to_ipv4or6_string(addr::STRING_IP_BRACKET_ADDRESS | addr::STRING_IP_PORT);
     }
     msg.add_parameter(snaprfs::g_name_snaprfs_param_my_addresses, my_addresses);
-std::cerr << "--- sending message [" << msg.to_string() << "]\n";
+//std::cerr << "--- sending message [" << msg.to_string() << "]\n";
     f_messenger->send_message(msg);
 }
 
