@@ -4,8 +4,8 @@
 
 # Source debconf libraries.
 . /usr/share/debconf/confmodule
-. /usr/lib/snaplogger/inst/setup-log-dirs
-. /usr/lib/eventdispathcer/inst/create-tls-keys
+. /usr/lib/snaplogger/inst/manage-log-dirs
+. /usr/lib/eventdispatcher/inst/manage-tls-keys
 
 
 if [ "$1" = "configure" ]

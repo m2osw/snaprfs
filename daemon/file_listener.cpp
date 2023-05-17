@@ -426,9 +426,18 @@ std::cerr << "--- received event: " << watch_event.get_watched_path()
         switch(s.st_mode & (S_IFMT))
         {
         case S_IFREG:
+            break;
+
         case S_IFDIR:
         case S_IFLNK:
-            break;
+            SNAP_LOG_TODO
+                << "a directory or symbolic link \""
+                << watch_event.get_filename()
+                << "\" in directory \""
+                << watch_event.get_watched_path()
+                << "\" changed, but we do not yet support those."
+                << SNAP_LOG_SEND;
+            return;
 
         default:
             // ignore character, block, fifo, ... type of files
