@@ -4,3 +4,4 @@ usr/sbin/snaprfs                    usr/sbin/
 conf/snaprfs.conf                   etc/snaprfs/
 conf/logger/snaprfs.conf            etc/snaprfs/logger/
 conf/logger/README.md               etc/snaprfs/logger/snaprfs.d/
+conf/config-README.md               etc/snaprfs/snaprfs.d/
