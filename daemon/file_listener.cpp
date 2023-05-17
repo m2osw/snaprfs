@@ -370,7 +370,8 @@ void file_listener::load_setup(std::string const & dir)
                 //
                 ed::file_event_mask_t flags(
                           ed::SNAP_FILE_CHANGED_EVENT_UPDATED
-                        | ed::SNAP_FILE_CHANGED_EVENT_WRITE);
+                        | ed::SNAP_FILE_CHANGED_EVENT_WRITE
+                        | ed::SNAP_FILE_CHANGED_EVENT_EXISTS);
                 if(new_path_info.get_delete_mode() == delete_mode_t::DELETE_MODE_APPLY)
                 {
                     flags |= ed::SNAP_FILE_CHANGED_EVENT_DELETED;
@@ -461,7 +462,8 @@ std::cerr << "--- received event: " << watch_event.get_watched_path()
 
     bool const updated((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_UPDATED) != 0);
     bool const modified((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_WRITE) != 0);
-    if(updated || modified)
+    bool const exists((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_EXISTS) != 0);
+    if(updated || modified || exists)
     {
         f_server->updated_file(fullpath, updated);
     }
