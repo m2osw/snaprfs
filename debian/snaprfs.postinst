@@ -15,7 +15,7 @@ then
     USER_NAME=snaprfs
     GROUP_NAME=snaprfs
 
-    # Create a default user editable communicatord.conf file if it does not
+    # Create a default user editable snaprfs.conf file if it does not
     # exist yet
     #
     SNAPRFS_USER_CONFIGURATION_FILE=/etc/${ENVIRONMENT_NAME}/${ENVIRONMENT_NAME}.d/50-${PACKAGE_NAME}.conf
@@ -45,7 +45,7 @@ then
     # Create the logfile because the snaprfs user may otherwise have
     # difficulties with it during logrotate.
     #
-    setup_log_dirs ${PACKAGE_NAME} ${USER_NAME} ${GROUP_NAME} true
+    create_log_dirs ${ENVIRONMENT_NAME} ${PACKAGE_NAME} ${USER_NAME} ${GROUP_NAME} true
 
     # Create a public & private key to listen on a port with TLS capabilities
     #
