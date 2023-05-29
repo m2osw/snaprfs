@@ -93,12 +93,14 @@ public:
     void                    set_last_updated();
     snapdev::timespec_ex const &
                             get_last_updated() const;
-    void                    set_start_sharing();
+    bool                    set_start_sharing();
     bool                    was_updated() const;
+    std::string             get_mtime() const;
 
 private:
     std::string             f_filename = std::string();
     std::uint32_t           f_id = 0;
+    struct stat             f_stat = {};        // stats at the time we start sending the file (to send mtime)
     snapdev::timespec_ex    f_received = snapdev::timespec_ex();
     snapdev::timespec_ex    f_last_updated = snapdev::timespec_ex();
     snapdev::timespec_ex    f_start_sharing = snapdev::timespec_ex();

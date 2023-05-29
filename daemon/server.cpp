@@ -481,15 +481,52 @@ snapdev::timespec_ex const & shared_file::get_last_updated() const
 }
 
 
-void shared_file::set_start_sharing()
+bool shared_file::set_start_sharing()
 {
     f_start_sharing = snapdev::timespec_ex::gettime();
+
+    if(stat(f_filename.c_str(), &f_stat) != 0)
+    {
+        // this can happen if the file is created, updated a few times,
+        // then deleted, all of which happens without closing the file first
+        //
+        SNAP_LOG_WARNING
+            << "could not find \""
+            << f_filename
+            << "\"; cannot start sharing."
+            << SNAP_LOG_SEND;
+        return false;
+    }
+
+    return true;
 }
 
 
 bool shared_file::was_updated() const
 {
     return f_last_updated > f_start_sharing;
+}
+
+
+/** \brief Get the file last modification time.
+ *
+ * The function transforms the file `stat()` last modification time in
+ * a string with the Unix time with a precision of nanoseconds as found
+ * in the timespec structure.
+ *
+ * \warning
+ * The f_stat field gets updated only when the set_start_sharing() function
+ * is called.
+ *
+ * \return The last modification time as Unix timestamp with up to 9 digits
+ * after the decimal point (nanoseconds).
+ */
+std::string shared_file::get_mtime() const
+{
+    snapdev::timespec_ex t(f_stat.st_mtim);
+    std::stringstream ss;
+    ss << t;
+    return ss.str();
 }
 
 
@@ -799,7 +836,10 @@ void server::deleted_file(std::string const & fullpath)
 
 void server::broadcast_file_changed(shared_file::pointer_t file)
 {
-    file->set_start_sharing();
+    if(!file->set_start_sharing())
+    {
+        return;
+    }
 
     // broadcast to others about the fact that file was modified so they
     // can download the file from us
@@ -807,9 +847,10 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
     ed::message msg;
     msg.set_command(snaprfs::g_name_snaprfs_cmd_rfs_file_changed);
     msg.set_server(communicatord::g_name_communicatord_server_remote);
-    msg.set_service("snaprfs");
+    msg.set_service(snaprfs::g_name_snaprfs_param_service);
     msg.add_parameter(snaprfs::g_name_snaprfs_param_filename, file->get_filename());
     msg.add_parameter(snaprfs::g_name_snaprfs_param_id, file->get_id());
+    msg.add_parameter(snaprfs::g_name_snaprfs_param_mtime, file->get_mtime());
     std::string my_addresses;
     if(f_data_server != nullptr)
     {

@@ -9,7 +9,9 @@ cmd_rfs_file_deleted=RFS_FILE_DELETED
 
 param_filename=filename
 param_id=id
+param_mtime=mtime
 param_my_addresses=my_addresses
+param_service=snaprfs
 
 scheme_rfs=rfs
 scheme_rfss=rfss
