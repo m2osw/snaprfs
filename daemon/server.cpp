@@ -661,7 +661,7 @@ void server::ready()
         std::string const private_key(f_opts.get_string("private-key"));
         if(!secure_listen.empty() && !certificate.empty() && !private_key.empty())
         {
-            if(!u.set_uri(secure_listen))
+            if(!u.set_uri(secure_listen, false, true))
             {
                 SNAP_LOG_ERROR
                     << "the \"listen=...\" parameter \""
