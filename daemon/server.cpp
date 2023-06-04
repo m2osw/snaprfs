@@ -838,6 +838,8 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
 {
     if(!file->set_start_sharing())
     {
+        // if false, the file is not available anymore
+        //
         return;
     }
 

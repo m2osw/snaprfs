@@ -74,7 +74,6 @@ namespace rfs_daemon
 
 
 
-
 messenger::messenger(server * s, advgetopt::getopt & opts)
     : communicator(opts, "snaprfs")
     , f_server(s)
