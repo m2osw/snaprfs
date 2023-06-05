@@ -6,6 +6,15 @@ project=snaprfs
 [public]
 cmd_rfs_file_changed=RFS_FILE_CHANGED
 cmd_rfs_file_deleted=RFS_FILE_DELETED
+cmd_rfs_configuration_filenames=RFS_CONFIGURATION_FILENAMES
+cmd_rfs_copy=RFS_COPY
+cmd_rfs_duplicate=RFS_DUPLICATE
+cmd_rfs_list=RFS_LIST
+cmd_rfs_move=RFS_MOVE
+cmd_rfs_ping=RFS_PING
+cmd_rfs_remove=RFS_REMOVE
+cmd_rfs_stat=RFS_STAT
+cmd_rfs_version=RFS_VERSION
 
 param_filename=filename
 param_id=id

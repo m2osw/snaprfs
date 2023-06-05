@@ -70,17 +70,17 @@ public:
     virtual void        stop(bool quitting) override;
 
     void                msg_file_changed(ed::message & msg);
-
-    void                msg_configuration_filenames(ed::message & msg);
-    void                msg_copy(ed::message & msg);
-    void                msg_duplicate(ed::message & msg);
     void                msg_file_deleted(ed::message & msg);
-    void                msg_list(ed::message & msg);
-    void                msg_move(ed::message & msg);
-    void                msg_ping(ed::message & msg);
-    void                msg_remove(ed::message & msg);
-    void                msg_stat(ed::message & msg);
-    void                msg_version(ed::message & msg);
+
+    //void                msg_configuration_filenames(ed::message & msg);
+    //void                msg_copy(ed::message & msg);
+    //void                msg_duplicate(ed::message & msg);
+    //void                msg_list(ed::message & msg);
+    //void                msg_move(ed::message & msg);
+    //void                msg_ping(ed::message & msg);
+    //void                msg_remove(ed::message & msg);
+    //void                msg_stat(ed::message & msg);
+    //void                msg_version(ed::message & msg);
 
 private:
     server *            f_server = nullptr;
