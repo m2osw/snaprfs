@@ -79,6 +79,8 @@ messenger::messenger(server * s, advgetopt::getopt & opts)
     , f_server(s)
     , f_dispatcher(std::make_shared<ed::dispatcher>(this))
 {
+    set_name("messenger");
+
 #ifdef _DEBUG
     f_dispatcher->set_trace();
 #endif

@@ -310,6 +310,7 @@ modified_timer::modified_timer(server * s, std::uint32_t transfer_after_sec)
     , f_server(s)
     , f_transfer_after_sec(std::max(3L, std::int64_t(transfer_after_sec)), 0) // minimum is 3 seconds
 {
+    set_name("modified_timer");
 }
 
 
@@ -664,8 +665,8 @@ void server::ready()
             if(!u.set_uri(secure_listen, false, true))
             {
                 SNAP_LOG_ERROR
-                    << "the \"listen=...\" parameter \""
-                    << f_opts.get_string("listen")
+                    << "the \"secure_listen=...\" parameter \""
+                    << secure_listen
                     << "\" is not a valid URI: "
                     << u.get_last_error_message()
                     << "."
@@ -738,6 +739,7 @@ void server::stop(bool quitting)
     if(f_communicator != nullptr)
     {
         f_communicator->remove_connection(f_file_listener);
+        f_communicator->remove_connection(g_modified_timer);
         f_file_listener.reset();
     }
 }
