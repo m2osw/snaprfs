@@ -139,7 +139,8 @@ void messenger::msg_file_changed(ed::message & msg)
 {
     if(!msg.has_parameter(snaprfs::g_name_snaprfs_param_filename)
     || !msg.has_parameter(snaprfs::g_name_snaprfs_param_id)
-    || !msg.has_parameter(snaprfs::g_name_snaprfs_param_my_addresses))
+    || !msg.has_parameter(snaprfs::g_name_snaprfs_param_my_addresses)
+    || !msg.has_parameter(snaprfs::g_name_snaprfs_param_mtime))
     {
         SNAP_LOG_ERROR
             << "received RFS_FILE_CHANGED message without a filename, an id, and/or my_address: \""
@@ -151,12 +152,20 @@ void messenger::msg_file_changed(ed::message & msg)
     std::string const filename(msg.get_parameter(snaprfs::g_name_snaprfs_param_filename));
     std::uint32_t const id(msg.get_integer_parameter(snaprfs::g_name_snaprfs_param_id));
     std::string const remote_addresses(msg.get_parameter(snaprfs::g_name_snaprfs_param_my_addresses));
+    snapdev::timespec_ex const mtime(msg.get_parameter(snaprfs::g_name_snaprfs_param_mtime));
 
     if(filename.empty()
     || remote_addresses.empty())
     {
         SNAP_LOG_ERROR
             << "filename and remote_address in the RFS_FILE_CHANGED cannot be empty."
+            << SNAP_LOG_SEND;
+        return;
+    }
+    if(mtime <= 0.0)
+    {
+        SNAP_LOG_ERROR
+            << "mtime in RFS_FILE_CHANGED must represent a modern time (Jan 1, 1970 00:00:01 or more recent)."
             << SNAP_LOG_SEND;
         return;
     }
@@ -225,7 +234,12 @@ void messenger::msg_file_changed(ed::message & msg)
         }
 
         addr::addr const a(ranges[0].get_from());
-        f_server->receive_file(filename, id, a, secure);
+        if(f_server->receive_file(filename, mtime, id, a, secure))
+        {
+            // we were able to connect to that address so we're done here
+            //
+            break;
+        }
     }
 }
 

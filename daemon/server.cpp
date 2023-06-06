@@ -437,6 +437,12 @@ snapdev::mounts const & get_mounts()
 shared_file::shared_file(std::string const & filename)
     : f_filename(filename)
 {
+    regenerate_id();
+}
+
+
+void shared_file::regenerate_id()
+{
     // get a random number for the identifier of this file
     //
     if(getrandom(&f_id, sizeof(f_id), 0) != sizeof(f_id))
@@ -529,6 +535,14 @@ std::string shared_file::get_mtime() const
     ss << t;
     return ss.str();
 }
+
+
+snapdev::timespec_ex shared_file::get_mtimespec() const
+{
+    return f_stat.st_mtim;
+}
+
+
 
 
 
@@ -757,34 +771,43 @@ shared_file::pointer_t server::get_file(std::uint32_t id)
 }
 
 
+shared_file::pointer_t server::get_file(std::string const & filename)
+{
+    auto it(std::find_if(
+          f_files.begin()
+        , f_files.end()
+        , [filename](auto const & f)
+        {
+            return f.second->get_filename() == filename;
+        }));
+    if(it != f_files.end())
+    {
+        // it exists, return that pointer
+        //
+        return it->second;
+    }
+
+    // it does not exist in our list, just prepare it and let other
+    // snaprfs know it was updated
+    //
+    shared_file::pointer_t file(std::make_shared<shared_file>(filename));
+    for(;;)
+    {
+        if(!f_files.contains(file->get_id()))
+        {
+            f_files[file->get_id()] = file;
+            return file;
+        }
+        file->regenerate_id();
+    }
+}
+
+
 void server::updated_file(
       std::string const & fullpath
     , bool updated)
 {
-    shared_file::pointer_t file;
-
-    auto it(std::find_if(
-          f_files.begin()
-        , f_files.end()
-        , [fullpath](auto const & f)
-        {
-            return f.second->get_filename() == fullpath;
-        }));
-    if(it == f_files.end())
-    {
-        // it does not exist in our list, just prepare it and let other
-        // snaprfs know it was updated
-        //
-        file = std::make_shared<shared_file>(fullpath);
-        f_files[file->get_id()] = file;
-    }
-    else
-    {
-        // it exists, we need to re-send from scratch since the file
-        // changed
-        //
-        file = it->second;
-    }
+    shared_file::pointer_t file(get_file(fullpath));
     file->set_last_updated();
 
 //auto it2 = f_files.find(file->get_id());
@@ -810,8 +833,6 @@ void server::updated_file(
 
 void server::deleted_file(std::string const & fullpath)
 {
-    shared_file::pointer_t file;
-
     auto it(std::find_if(
           f_files.begin()
         , f_files.end()
@@ -884,8 +905,35 @@ void server::broadcast_file_changed(shared_file::pointer_t file)
 }
 
 
-void server::receive_file(
+/** \brief Start receiving a file.
+ *
+ * This function starts a data receiver to receive a file from a remote
+ * snaprfs instance.
+ *
+ * The function returns true if:
+ *
+ * * The connection was established successfully.
+ * * The server detects that the file is not defined.
+ * * The file cannot be received.
+ *
+ * In other words, true does not mean success. It means there is no need to
+ * call the function again with another \p address.
+ *
+ * \param[in] filename  The name of the file that is to be received.
+ * \param[in] mtime  The time when the file was last updated on the remote
+ * computer.
+ * \param[in] id  The identifier of the file, sent by the source. It will
+ * have to match on the source snaprfs for the transfer to start.
+ * \param[in] address  The IP address of the remote snaprfs sending us a file.
+ * \param[in] secure  Whether the connection is expected to be secure.
+ *
+ * \return true if the transfer is to be ignored (see above) or the
+ * connection happened; false if the connection failed and trying with
+ * a different IP address may succeed.
+ */
+bool server::receive_file(
       std::string const & filename
+    , snapdev::timespec_ex const & mtime
     , std::uint32_t id
     , addr::addr const & address
     , bool secure)
@@ -901,7 +949,7 @@ void server::receive_file(
             << filename
             << "\" was not found on this computer. Ignore transfer order."
             << SNAP_LOG_SEND;
-        return;
+        return true;
     }
     switch(p->get_path_mode())
     {
@@ -915,9 +963,23 @@ void server::receive_file(
             << filename
             << "\" says we cannot receive this file. Ignore transfer order."
             << SNAP_LOG_SEND;
-        return;
+        return true;
 
     }
+
+    shared_file::pointer_t file(get_file(filename));
+    if(file->get_mtimespec() >= mtime)
+    {
+        // TODO: this means the other computer needs to be updated
+        //
+        SNAP_LOG_VERBOSE
+            << "file \""
+            << filename
+            << "\" is newer, ignore the RFS_FILE_CHANGED message."
+            << SNAP_LOG_SEND;
+        return true;
+    }
+
     std::string path_part(p->get_path_part());
     if(path_part.empty())
     {
@@ -955,7 +1017,10 @@ void server::receive_file(
             , secure
                 ? ed::mode_t::MODE_ALWAYS_SECURE
                 : ed::mode_t::MODE_PLAIN));
-        f_communicator->add_connection(receiver);
+        if(!f_communicator->add_connection(receiver))
+        {
+            return false;
+        }
     }
     catch(ed::event_dispatcher_exception const & e)
     {
@@ -968,8 +1033,10 @@ void server::receive_file(
             << e.what()
             << ")."
             << SNAP_LOG_SEND;
-        return;
+        return false;
     }
+
+    return true;
 }
 
 

@@ -96,8 +96,13 @@ public:
     bool                    set_start_sharing();
     bool                    was_updated() const;
     std::string             get_mtime() const;
+    snapdev::timespec_ex    get_mtimespec() const;
 
 private:
+    friend class server;
+
+    void                    regenerate_id();
+
     std::string             f_filename = std::string();
     std::uint32_t           f_id = 0;
     struct stat             f_stat = {};        // stats at the time we start sending the file (to send mtime)
@@ -119,12 +124,14 @@ public:
     void                    stop(bool quitting);
 
     shared_file::pointer_t  get_file(std::uint32_t id);
+    shared_file::pointer_t  get_file(std::string const & filename);
     void                    updated_file(
                                   std::string const & fullpath
                                 , bool updated);
     void                    deleted_file(std::string const & fullpath);
-    void                    receive_file(
+    bool                    receive_file(
                                   std::string const & filename
+                                , snapdev::timespec_ex const & mtime
                                 , std::uint32_t id
                                 , addr::addr const & address
                                 , bool secure);
