@@ -63,15 +63,17 @@ int         g_identifier = 0;
 
 
 data_receiver::data_receiver(
-          std::string const & filename
+          server * s
+        , std::string const & filename
         , std::uint32_t id
-        , std::string const & path_part
+        , std::string const & temp_path
         , addr::addr const & address
         , ed::mode_t mode)
     : tcp_client_connection(address, mode)
+    , f_server(s)
     , f_filename(filename)
     , f_id(id)
-    , f_path_part(path_part)
+    , f_path_part(temp_path)
 {
     set_name("data_receiver");
 
@@ -81,7 +83,7 @@ data_receiver::data_receiver(
     }
     if(f_path_part.empty())
     {
-        throw rfs::missing_parameter("path_part cannot be empty in data_receiver");
+        throw rfs::missing_parameter("temp_path cannot be empty in data_receiver");
     }
     if(f_path_part.back() != '/')
     {
@@ -443,6 +445,8 @@ void data_receiver::process_read()
             process_error();
             return;
         }
+
+        f_server->refresh_file(f_filename);
 
         remove_from_communicator();
     }

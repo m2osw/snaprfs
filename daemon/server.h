@@ -102,6 +102,7 @@ private:
     friend class server;
 
     void                    regenerate_id();
+    bool                    refresh_stats();
 
     std::string             f_filename = std::string();
     std::uint32_t           f_id = 0;
@@ -125,6 +126,7 @@ public:
 
     shared_file::pointer_t  get_file(std::uint32_t id);
     shared_file::pointer_t  get_file(std::string const & filename);
+    void                    refresh_file(std::string const & filename);
     void                    updated_file(
                                   std::string const & fullpath
                                 , bool updated);

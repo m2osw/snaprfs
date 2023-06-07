@@ -45,7 +45,8 @@ public:
     typedef std::shared_ptr<data_receiver>    pointer_t;
 
                         data_receiver(
-                              std::string const & filename
+                              server * s
+                            , std::string const & filename
                             , std::uint32_t id
                             , std::string const & path_part
                             , addr::addr const & address
@@ -61,6 +62,7 @@ public:
     virtual void        process_error() override;
 
 private:
+    server *            f_server = nullptr;
     std::string         f_filename = std::string();
     std::string         f_receiving_filename = std::string();
     std::vector<char>   f_request = std::vector<char>();

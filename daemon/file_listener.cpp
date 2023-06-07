@@ -371,6 +371,7 @@ void file_listener::load_setup(std::string const & dir)
                 ed::file_event_mask_t flags(
                           ed::SNAP_FILE_CHANGED_EVENT_UPDATED
                         | ed::SNAP_FILE_CHANGED_EVENT_WRITE
+                        | ed::SNAP_FILE_CHANGED_EVENT_CREATED
                         | ed::SNAP_FILE_CHANGED_EVENT_EXISTS);
                 if(new_path_info.get_delete_mode() == delete_mode_t::DELETE_MODE_APPLY)
                 {
@@ -412,10 +413,10 @@ path_info const * file_listener::find_path_info(std::string const & path) const
 
 void file_listener::process_event(ed::file_event const & watch_event)
 {
-//std::cerr << "--- received event: " << watch_event.get_watched_path()
-//<< " -- 0x" << std::hex << watch_event.get_events() << std::dec
-//<< " -- " << watch_event.get_filename()
-//<< "\n";
+std::cerr << "--- received event: " << watch_event.get_watched_path()
+<< " -- 0x" << std::hex << watch_event.get_events() << std::dec
+<< " -- " << watch_event.get_filename()
+<< "\n";
 
     std::string const fullpath(snapdev::pathinfo::canonicalize(
                                       watch_event.get_watched_path()
@@ -461,7 +462,7 @@ void file_listener::process_event(ed::file_event const & watch_event)
     }
 
     bool const updated((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_UPDATED) != 0);
-    bool const modified((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_WRITE) != 0);
+    bool const modified((watch_event.get_events() & (ed::SNAP_FILE_CHANGED_EVENT_WRITE | ed::SNAP_FILE_CHANGED_EVENT_CREATED)) != 0);
     bool const exists((watch_event.get_events() & ed::SNAP_FILE_CHANGED_EVENT_EXISTS) != 0);
     if(updated || modified || exists)
     {

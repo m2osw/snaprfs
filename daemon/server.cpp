@@ -452,6 +452,25 @@ void shared_file::regenerate_id()
 }
 
 
+bool shared_file::refresh_stats()
+{
+    if(stat(f_filename.c_str(), &f_stat) != 0)
+    {
+        // this can happen if the file is created, updated a few times,
+        // then deleted, all of which happens without closing the file first
+        //
+        SNAP_LOG_WARNING
+            << "could not find \""
+            << f_filename
+            << "\"; cannot start sharing."
+            << SNAP_LOG_SEND;
+        return false;
+    }
+
+    return true;
+}
+
+
 std::string const & shared_file::get_filename() const
 {
     return f_filename;
@@ -492,20 +511,7 @@ bool shared_file::set_start_sharing()
 {
     f_start_sharing = snapdev::timespec_ex::gettime();
 
-    if(stat(f_filename.c_str(), &f_stat) != 0)
-    {
-        // this can happen if the file is created, updated a few times,
-        // then deleted, all of which happens without closing the file first
-        //
-        SNAP_LOG_WARNING
-            << "could not find \""
-            << f_filename
-            << "\"; cannot start sharing."
-            << SNAP_LOG_SEND;
-        return false;
-    }
-
-    return true;
+    return refresh_stats();
 }
 
 
@@ -803,6 +809,13 @@ shared_file::pointer_t server::get_file(std::string const & filename)
 }
 
 
+void server::refresh_file(std::string const & filename)
+{
+    shared_file::pointer_t file(get_file(filename));
+    file->refresh_stats();
+}
+
+
 void server::updated_file(
       std::string const & fullpath
     , bool updated)
@@ -980,8 +993,8 @@ bool server::receive_file(
         return true;
     }
 
-    std::string path_part(p->get_path_part());
-    if(path_part.empty())
+    std::string temp_path(p->get_path_part());
+    if(temp_path.empty())
     {
         // find a mount point for that path to the file we want to transfer
         //
@@ -994,25 +1007,26 @@ bool server::receive_file(
             {
                 if(snapdev::pathinfo::is_child_path(m->get_dir(), part))
                 {
-                    path_part = part;
+                    temp_path = part;
                     break;
                 }
             }
         }
-        if(path_part.empty())
+        if(temp_path.empty())
         {
             // use default if no mount point matched
             //
-            path_part = *f_temp_dirs.begin();
+            temp_path = *f_temp_dirs.begin();
         }
     }
 
     try
     {
         data_receiver::pointer_t receiver(std::make_shared<data_receiver>(
-              filename
+              this
+            , filename
             , id
-            , path_part
+            , temp_path
             , address
             , secure
                 ? ed::mode_t::MODE_ALWAYS_SECURE
