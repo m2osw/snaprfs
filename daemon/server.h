@@ -90,7 +90,7 @@ public:
     std::uint32_t           get_id() const;
     void                    set_received();
     snapdev::timespec_ex    get_received() const;
-    void                    set_last_updated();
+    bool                    set_last_updated();
     snapdev::timespec_ex const &
                             get_last_updated() const;
     bool                    set_start_sharing();

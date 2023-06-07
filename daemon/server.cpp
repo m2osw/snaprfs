@@ -495,9 +495,26 @@ snapdev::timespec_ex shared_file::get_received() const
 }
 
 
-void shared_file::set_last_updated()
+bool shared_file::set_last_updated()
 {
+    struct stat s(f_stat);
+
+    if(!refresh_stats())
+    {
+        return false;
+    }
+    if(snapdev::timespec_ex(s.st_mtim) == snapdev::timespec_ex(f_stat.st_mtim)
+    && s.st_uid == f_stat.st_uid
+    && s.st_gid == f_stat.st_gid
+    && s.st_size == f_stat.st_size
+    && s.st_mode == f_stat.st_mode)
+    {
+        return false;
+    }
+
     f_last_updated = snapdev::timespec_ex::gettime();
+
+    return true;
 }
 
 
@@ -821,7 +838,19 @@ void server::updated_file(
     , bool updated)
 {
     shared_file::pointer_t file(get_file(fullpath));
-    file->set_last_updated();
+    if(!file->set_last_updated())
+    {
+        // file did not change, ignore the event
+        //
+        // Note: this especially happens when we just received the file
+        //
+        SNAP_LOG_DEBUG
+            << "file changed event for \""
+            << fullpath
+            << "\" ignored because the stat() did not change."
+            << SNAP_LOG_SEND;
+        return;
+    }
 
 //auto it2 = f_files.find(file->get_id());
 //std::cerr << "------ " << (updated ? "updated" : "wrote to")
