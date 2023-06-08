@@ -58,6 +58,8 @@ data_sender::data_sender(
     , f_server(s)
 {
     set_name("data_sender");
+
+    non_blocking();
 }
 
 

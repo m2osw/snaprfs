@@ -1,7 +1,6 @@
 
 # Core Implementation (SNAP-658)
 
-* TCP data connection (for plain & encrypted transmissions)
 * Compress the file before sending unless under X bytes
 * Make sure watch-dirs parent/child + recursive do not overlap
 * Make sure all temporary directories are not included in watch-dirs

@@ -75,6 +75,8 @@ data_server::data_server(
     , f_communicator(ed::communicator::instance())
 {
     set_name("data_server");
+
+    non_blocking();
 }
 
 

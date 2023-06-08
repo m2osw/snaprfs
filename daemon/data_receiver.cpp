@@ -77,6 +77,8 @@ data_receiver::data_receiver(
 {
     set_name("data_receiver");
 
+    non_blocking();
+
     if(f_filename.empty())
     {
         throw rfs::missing_parameter("filename cannot be empty in data_receiver");
