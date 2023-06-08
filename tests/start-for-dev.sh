@@ -12,7 +12,6 @@ then
 fi
 TMP_DIR=${BINARY_DIR}/tmp
 
-MY_ADDRESS="192.168.2.1"
 REMOTE_LISTEN="192.168.2.1"
 SECURE_LISTEN="192.168.3.1"
 GDB=""
@@ -27,17 +26,10 @@ do
 	"--help"|"-h")
 		echo "Usage: $0 [-opts]"
 		echo "where -opts are:"
-		echo "   --my-address | -a          define this computer's address"
 		echo "   --secure-listen | -s       define the secure-listen IP address (public network)"
 		echo "   --remote-listen | -r       define the remote-listen IP address (private network)"
 		echo
 		exit 1
-		;;
-
-	"--my-address"|"-a")
-		shift
-		MY_ADDRESS="${1}"
-		shift
 		;;
 
 	"--remote-listen"|"-r")
@@ -72,8 +64,8 @@ then
 fi
 
 ${GDB} ${SNAPRFS} \
-	--listen rfs://${REMOTE_LISTEN}:4044 
-	--secure-listen rfss://admin:password1@${SECURE_LISTEN}:4045
+	--listen rfs://${REMOTE_LISTEN}:4044 \
+	--secure-listen rfss://admin:password1@${SECURE_LISTEN}:4045 \
 	--certificate ${TMP_DIR}/cert.crt \
 	--private-key ${TMP_DIR}/priv.key
 

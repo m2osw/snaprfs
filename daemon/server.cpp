@@ -747,7 +747,7 @@ void server::ready()
                                         , ranges[0].get_from()
                                         , certificate
                                         , private_key
-                                        , ed::mode_t::MODE_ALWAYS_SECURE
+                                        , ed::mode_t::MODE_SECURE
                                         , -1
                                         , true);
                     f_communicator->add_connection(f_secure_data_server);
@@ -1072,7 +1072,7 @@ bool server::receive_file(
             , temp_path
             , address
             , secure
-                ? ed::mode_t::MODE_ALWAYS_SECURE
+                ? ed::mode_t::MODE_SECURE
                 : ed::mode_t::MODE_PLAIN));
         if(!f_communicator->add_connection(receiver))
         {
@@ -1084,7 +1084,9 @@ bool server::receive_file(
         SNAP_LOG_ERROR
             << "could not connect to receive file \""
             << filename
-            << "\" from \""
+            << "\" from "
+            << (secure ? "secure" : "plain")
+            << " \""
             << address
             << "\" ("
             << e.what()
