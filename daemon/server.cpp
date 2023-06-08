@@ -638,67 +638,71 @@ void server::ready()
         f_communicator->add_connection(f_file_listener);
     }
 
-    edhttp::uri u;
-    if(!u.set_uri(f_opts.get_string("listen"), false, true))
+    if(f_opts.is_defined("listen"))
     {
-        SNAP_LOG_ERROR
-            << "the \"listen=...\" parameter \""
-            << f_opts.get_string("listen")
-            << "\" is not a valid URI: "
-            << u.get_last_error_message()
-            << "."
-            << SNAP_LOG_SEND;
-        stop(false);
-        return;
-    }
-    if(u.scheme() != snaprfs::g_name_snaprfs_scheme_rfs)
-    {
-        SNAP_LOG_RECOVERABLE_ERROR
-            << "the \"listen=...\" parameter must have an address with the scheme set to \"rfs\" not \""
-            << u.scheme()
-            << "\". \""
-            << f_opts.get_string("listen")
-            << "\" is not supported."
-            << SNAP_LOG_SEND;
-    }
-    else
-    {
-        addr::addr_range::vector_t const & ranges(u.address_ranges());
-        if(ranges.size() != 1
-        || !ranges[0].has_from()
-        || ranges[0].has_to())
+        edhttp::uri u;
+        if(!u.set_uri(f_opts.get_string("listen"), false, true))
         {
             SNAP_LOG_ERROR
-                << "the \"listen=...\" parameter must have an address with the scheme set to \"rfs\". \""
+                << "the \"listen=...\" parameter \""
                 << f_opts.get_string("listen")
-                << "\" is not supported."
+                << "\" is not a valid URI: "
+                << u.get_last_error_message()
+                << "."
                 << SNAP_LOG_SEND;
             stop(false);
             return;
         }
-        f_data_server = std::make_shared<data_server>(
-                              this
-                            , ranges[0].get_from()
-                            , std::string()
-                            , std::string()
-                            , ed::mode_t::MODE_PLAIN
-                            , -1
-                            , true);
-        f_communicator->add_connection(f_data_server);
+        if(u.scheme() != snaprfs::g_name_snaprfs_scheme_rfs)
+        {
+            SNAP_LOG_RECOVERABLE_ERROR
+                << "the \"listen=...\" parameter must have an address with the scheme set to \"rfs\" not \""
+                << u.scheme()
+                << "\". \""
+                << f_opts.get_string("listen")
+                << "\" is not supported."
+                << SNAP_LOG_SEND;
+        }
+        else
+        {
+            addr::addr_range::vector_t const & ranges(u.address_ranges());
+            if(ranges.size() != 1
+            || !ranges[0].has_from()
+            || ranges[0].has_to())
+            {
+                SNAP_LOG_ERROR
+                    << "the \"listen=...\" parameter must have an address with the scheme set to \"rfs\". \""
+                    << f_opts.get_string("listen")
+                    << "\" is not supported."
+                    << SNAP_LOG_SEND;
+                stop(false);
+                return;
+            }
+            f_data_server = std::make_shared<data_server>(
+                                  this
+                                , ranges[0].get_from()
+                                , std::string()
+                                , std::string()
+                                , ed::mode_t::MODE_PLAIN
+                                , -1
+                                , true);
+            f_communicator->add_connection(f_data_server);
+        }
     }
 
     // also create a secure listener if the user specified a
     // certificate and a private key and a secure-listen URI
     //
-    if(!f_opts.is_defined("secure-listen")
-    && !f_opts.is_defined("certificate")
-    && !f_opts.is_defined("private-key"))
+    if(f_opts.is_defined("secure-listen")
+    && f_opts.is_defined("certificate")
+    && f_opts.is_defined("private-key"))
     {
         std::string const secure_listen(f_opts.get_string("secure-listen"));
         std::string const certificate(f_opts.get_string("certificate"));
         std::string const private_key(f_opts.get_string("private-key"));
         if(!secure_listen.empty() && !certificate.empty() && !private_key.empty())
         {
+            edhttp::uri u;
             if(!u.set_uri(secure_listen, false, true))
             {
                 SNAP_LOG_ERROR
@@ -750,6 +754,16 @@ void server::ready()
                 }
             }
         }
+    }
+
+    if(f_data_server == nullptr
+    && f_secure_data_server == nullptr)
+    {
+        SNAP_LOG_ERROR
+            << "at least one of \"listen=...\" or \"secure_listen=...\" must be defined."
+            << SNAP_LOG_SEND;
+        stop(false);
+        return;
     }
 }
 
