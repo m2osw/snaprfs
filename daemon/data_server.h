@@ -54,10 +54,14 @@ public:
 
     virtual void        process_accept() override;
 
+    void                set_login_info(std::string const & login_name, std::string const & password);
+
 private:
     server *            f_server = nullptr;
     ed::communicator::pointer_t
                         f_communicator = ed::communicator::pointer_t();
+    std::string         f_login_name = std::string();
+    std::string         f_password = std::string();
 };
 
 

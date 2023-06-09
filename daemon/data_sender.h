@@ -59,6 +59,9 @@ struct data_header
     std::uint16_t       f_mode = 0;
     std::uint8_t        f_username_length = 0;
     std::uint8_t        f_groupname_length = 0;
+    std::uint8_t        f_login_name_length = 0;
+    std::uint8_t        f_password_length = 0;
+    std::uint8_t        f_padding[6] = {};          // uint64 means we need a multiple of 8 bytes
 };
 
 
@@ -91,6 +94,7 @@ public:
                         data_sender(data_sender const &) = delete;
     data_sender &       operator = (data_sender const &) = delete;
 
+    void                set_login_info(std::string const & login_name, std::string const & password);
     bool                open();
 
     // tcp_client_connection implementation
@@ -101,6 +105,8 @@ public:
 
 private:
     server *            f_server = nullptr;
+    std::string         f_login_name = std::string();
+    std::string         f_password = std::string();
     std::ifstream       f_input = std::ifstream();
     murmur3::stream     f_murmur3 = murmur3::stream(DATA_SEED_H1, DATA_SEED_H2);
     file_request        f_file_request = file_request();

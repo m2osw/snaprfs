@@ -105,6 +105,13 @@ data_receiver::data_receiver(
 }
 
 
+void data_receiver::set_login_info(std::string const & login_name, std::string const & password)
+{
+    f_login_name = login_name;
+    f_password = password;
+}
+
+
 ssize_t data_receiver::write(void const * data, std::size_t length)
 {
     if(get_socket() == -1)
@@ -219,7 +226,9 @@ void data_receiver::process_read()
         //
         f_header_size = sizeof(f_header)
                         + f_header.f_username_length
-                        + f_header.f_groupname_length;
+                        + f_header.f_groupname_length
+                        + f_header.f_login_name_length
+                        + f_header.f_password_length;
     }
 
     // read the user and group name which directly follow the header
@@ -229,7 +238,7 @@ void data_receiver::process_read()
         while(f_received_bytes < f_header_size)
         {
             // note: the f_names buffer is allocated once on creation with
-            //       512 bytes since the maximum size for each name is
+            //       1024 bytes since the maximum size for each name is
             //       255 it will always be enough
             //
             std::size_t const size_left(f_header_size - f_received_bytes);
@@ -249,6 +258,24 @@ void data_receiver::process_read()
                 return;
             }
             f_received_bytes += r;
+        }
+
+        // verify the login/password
+        //
+        if(!f_login_name.empty()
+        || !f_password.empty())
+        {
+            std::string const login_name(f_names.data() + f_header.f_username_length + f_header.f_groupname_length, f_header.f_login_name_length);
+            std::string const password(f_names.data() + f_header.f_username_length + f_header.f_groupname_length + f_header.f_login_name_length, f_header.f_password_length);
+            if(f_login_name != login_name
+            || f_password != password)
+            {
+                SNAP_LOG_ERROR
+                    << "sender does not know the correct login name and/or password."
+                    << SNAP_LOG_SEND;
+                process_error();
+                return;
+            }
         }
 
         // note: we receive the file as the snaprfs user

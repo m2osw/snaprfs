@@ -54,6 +54,8 @@ public:
                         data_receiver(data_receiver const &) = delete;
     data_receiver       operator = (data_receiver const &) = delete;
 
+    void                set_login_info(std::string const & login_name, std::string const & password);
+
     // tcp_client_connection implementation
     virtual ssize_t     write(void const * data, size_t length) override;
     virtual bool        is_writer() const override;
@@ -63,10 +65,12 @@ public:
 
 private:
     server *            f_server = nullptr;
+    std::string         f_login_name = std::string();
+    std::string         f_password = std::string();
     std::string         f_filename = std::string();
     std::string         f_receiving_filename = std::string();
     std::vector<char>   f_request = std::vector<char>();
-    std::vector<char>   f_names = std::vector<char>(512);
+    std::vector<char>   f_names = std::vector<char>(1024);
     std::uint32_t       f_id = 0;
     std::string         f_path_part = std::string();
     std::size_t         f_received_bytes = 0;

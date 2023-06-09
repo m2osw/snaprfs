@@ -63,9 +63,19 @@ then
 		-subj "/C=US/ST=California/L=Sacramento/O=Snap/OU=Website/CN=snap.website"
 fi
 
-${GDB} ${SNAPRFS} \
-	--listen rfs://${REMOTE_LISTEN}:4044 \
-	--secure-listen rfss://admin:password1@${SECURE_LISTEN}:4045 \
-	--certificate ${TMP_DIR}/cert.crt \
-	--private-key ${TMP_DIR}/priv.key
+OPTIONS=
+
+if test -n "${REMOTE_LISTEN}"
+then
+	OPTIONS="${OPTIONS} --listen rfs://${REMOTE_LISTEN}:4044"
+fi
+if test -n "${SECURE_LISTEN}"
+then
+	#OPTIONS="${OPTIONS} --secure-listen rfss://admin:password1@${SECURE_LISTEN}:4045"
+	OPTIONS="${OPTIONS} --secure-listen rfss://admin@${SECURE_LISTEN}:4045"
+	OPTIONS="${OPTIONS} --certificate ${TMP_DIR}/cert.crt"
+	OPTIONS="${OPTIONS} --private-key ${TMP_DIR}/priv.key"
+fi
+
+${GDB} ${SNAPRFS} ${OPTIONS}
 

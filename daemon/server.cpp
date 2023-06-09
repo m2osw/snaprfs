@@ -703,6 +703,7 @@ void server::ready()
         if(!secure_listen.empty() && !certificate.empty() && !private_key.empty())
         {
             edhttp::uri u;
+std::cerr << "---------- secure_listen =[" << secure_listen << "]\n";
             if(!u.set_uri(secure_listen, false, true))
             {
                 SNAP_LOG_ERROR
@@ -710,11 +711,11 @@ void server::ready()
                     << secure_listen
                     << "\" is not a valid URI: "
                     << u.get_last_error_message()
-                    << "."
                     << SNAP_LOG_SEND;
                 stop(false);
                 return;
             }
+std::cerr << "---------- got URI\n";
             if(u.scheme() != snaprfs::g_name_snaprfs_scheme_rfss)
             {
                 SNAP_LOG_RECOVERABLE_ERROR
@@ -740,18 +741,50 @@ void server::ready()
                     stop(false);
                     return;
                 }
-                else
+                f_login_name = u.get_username();
+                f_password = u.get_password();
+                if(f_login_name.empty())
                 {
-                    f_secure_data_server = std::make_shared<data_server>(
-                                          this
-                                        , ranges[0].get_from()
-                                        , certificate
-                                        , private_key
-                                        , ed::mode_t::MODE_SECURE
-                                        , -1
-                                        , true);
-                    f_communicator->add_connection(f_secure_data_server);
+                    SNAP_LOG_ERROR
+                        << "the \"secure_listen=...\" parameter must include a non-empty username."
+                        << SNAP_LOG_SEND;
+                    stop(false);
+                    return;
                 }
+                if(f_password.empty())
+                {
+                    SNAP_LOG_ERROR
+                        << "the \"secure_listen=...\" parameter must include a non-empty password."
+                        << SNAP_LOG_SEND;
+                    stop(false);
+                    return;
+                }
+                if(f_login_name.length() > 255)
+                {
+                    SNAP_LOG_ERROR
+                        << "the \"secure_listen=...\" parameter must include a username of less than 256 characters."
+                        << SNAP_LOG_SEND;
+                    stop(false);
+                    return;
+                }
+                if(f_password.length() > 255)
+                {
+                    SNAP_LOG_ERROR
+                        << "the \"secure_listen=...\" parameter must include a password of less than 256 characters."
+                        << SNAP_LOG_SEND;
+                    stop(false);
+                    return;
+                }
+                f_secure_data_server = std::make_shared<data_server>(
+                                      this
+                                    , ranges[0].get_from()
+                                    , certificate
+                                    , private_key
+                                    , ed::mode_t::MODE_SECURE
+                                    , -1
+                                    , true);
+                f_secure_data_server->set_login_info(f_login_name, f_password);
+                f_communicator->add_connection(f_secure_data_server);
             }
         }
     }
@@ -789,6 +822,8 @@ void server::stop(bool quitting)
 
     if(f_communicator != nullptr)
     {
+        f_communicator->remove_connection(f_data_server);
+        f_communicator->remove_connection(f_secure_data_server);
         f_communicator->remove_connection(f_file_listener);
         f_communicator->remove_connection(g_modified_timer);
         f_file_listener.reset();
@@ -1074,6 +1109,10 @@ bool server::receive_file(
             , secure
                 ? ed::mode_t::MODE_SECURE
                 : ed::mode_t::MODE_PLAIN));
+        if(secure)
+        {
+            receiver->set_login_info(f_login_name, f_password);
+        }
         if(!f_communicator->add_connection(receiver))
         {
             return false;

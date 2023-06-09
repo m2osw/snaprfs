@@ -150,6 +150,8 @@ private:
                             f_file_listener = file_listener::pointer_t();
     data_server::pointer_t  f_data_server = data_server::pointer_t();
     data_server::pointer_t  f_secure_data_server = data_server::pointer_t();
+    std::string             f_login_name = std::string();
+    std::string             f_password = std::string();
     bool                    f_force_restart = false;
     shared_file::map_t      f_files = shared_file::map_t();
     std::list<std::string>  f_temp_dirs = std::list<std::string>();

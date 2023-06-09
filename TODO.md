@@ -4,6 +4,9 @@
 * Compress the file before sending unless under X bytes
 * Make sure watch-dirs parent/child + recursive do not overlap
 * Make sure all temporary directories are not included in watch-dirs
+* Security: if the secure address is somewhat invalid it gets logged with
+  login and password--that should not happen
+* Security: the login and password are saved in clear in our .conf files
 
 # Extensions
 

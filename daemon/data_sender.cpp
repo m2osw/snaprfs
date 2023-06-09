@@ -63,6 +63,13 @@ data_sender::data_sender(
 }
 
 
+void data_sender::set_login_info(std::string const & login_name, std::string const & password)
+{
+    f_login_name = login_name;
+    f_password = password;
+}
+
+
 bool data_sender::open()
 {
     if(f_input.is_open())
@@ -136,16 +143,22 @@ bool data_sender::open()
             << s.st_gid
             << " of file \""
             << f_filename
-            << "\" could not be resolved."
+            << "\" could not be resolved or is more than 255 characters."
             << SNAP_LOG_SEND;
         return false;
     }
-    f_size = sizeof(data_header) + pw_len + gr_len;
+    std::size_t const login_name_len(f_login_name.length());
+    std::size_t const password_len(f_password.length());
+    f_size = sizeof(data_header) + pw_len + gr_len + login_name_len + password_len;
     if(f_size > sizeof(f_buffer))
     {
         f_size = 0;
         SNAP_LOG_FATAL
-            << "header is larger than f_buffer."
+            << "header ("
+            << f_size
+            << ") is larger than f_buffer ("
+            << sizeof(f_buffer)
+            << ")."
             << SNAP_LOG_SEND;
         return false;
     }
@@ -166,7 +179,7 @@ bool data_sender::open()
         return false;
     }
 
-    data_header * header(reinterpret_cast<data_header *>(new char[sizeof(data_header) + pw_len + gr_len]));
+    data_header * header(reinterpret_cast<data_header *>(f_buffer));
     header->f_magic[0] = 'D';
     header->f_magic[1] = 'A';
     header->f_magic[2] = 'T';
@@ -177,14 +190,23 @@ bool data_sender::open()
     header->f_mtime_nsec = s.st_mtim.tv_nsec;
     header->f_username_length = pw_len;
     header->f_groupname_length = gr_len;
+    header->f_login_name_length = f_login_name.length();
+    header->f_password_length = f_password.length();
+    memset(header->f_padding, 0, sizeof(header->f_padding));
     memcpy(header + 1, pw->pw_name, pw_len);
     memcpy(reinterpret_cast<char *>(header + 1) + pw_len, gr->gr_name, gr_len);
+    if(!f_login_name.empty())
+    {
+        memcpy(reinterpret_cast<char *>(header + 1) + pw_len + gr_len, f_login_name.c_str(), f_login_name.length());
+    }
+    if(!f_password.empty())
+    {
+        memcpy(reinterpret_cast<char *>(header + 1) + pw_len + gr_len + f_login_name.length(), f_password.c_str(), f_password.length());
+    }
 
     f_input.seekg(0, std::ios_base::end);
     header->f_size = f_input.tellg();
     f_input.seekg(0, std::ios_base::beg);
-
-    memcpy(f_buffer, header, f_size);
 
     return true;
 }

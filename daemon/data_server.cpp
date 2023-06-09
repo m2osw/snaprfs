@@ -108,7 +108,19 @@ void data_server::process_accept()
             << "new data_sender connection could not be added to the ed::communicator."
             << SNAP_LOG_SEND;
     }
+    else
+    {
+        service->set_login_info(f_login_name, f_password);
+    }
 }
+
+
+void data_server::set_login_info(std::string const & login_name, std::string const & password)
+{
+    f_login_name = login_name;
+    f_password = password;
+}
+
 
 
 } // namespace rfs_daemon
