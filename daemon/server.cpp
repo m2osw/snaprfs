@@ -703,7 +703,6 @@ void server::ready()
         if(!secure_listen.empty() && !certificate.empty() && !private_key.empty())
         {
             edhttp::uri u;
-std::cerr << "---------- secure_listen =[" << secure_listen << "]\n";
             if(!u.set_uri(secure_listen, false, true))
             {
                 SNAP_LOG_ERROR
@@ -715,7 +714,6 @@ std::cerr << "---------- secure_listen =[" << secure_listen << "]\n";
                 stop(false);
                 return;
             }
-std::cerr << "---------- got URI\n";
             if(u.scheme() != snaprfs::g_name_snaprfs_scheme_rfss)
             {
                 SNAP_LOG_RECOVERABLE_ERROR
