@@ -71,8 +71,7 @@ then
 fi
 if test -n "${SECURE_LISTEN}"
 then
-	#OPTIONS="${OPTIONS} --secure-listen rfss://admin:password1@${SECURE_LISTEN}:4045"
-	OPTIONS="${OPTIONS} --secure-listen rfss://admin@${SECURE_LISTEN}:4045"
+	OPTIONS="${OPTIONS} --secure-listen rfss://admin:password1@${SECURE_LISTEN}:4045"
 	OPTIONS="${OPTIONS} --certificate ${TMP_DIR}/cert.crt"
 	OPTIONS="${OPTIONS} --private-key ${TMP_DIR}/priv.key"
 fi
