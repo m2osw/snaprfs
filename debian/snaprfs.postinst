@@ -18,8 +18,23 @@ then
     # Create a default user editable snaprfs.conf file if it does not
     # exist yet
     #
-    SNAPRFS_USER_CONFIGURATION_FILE=/etc/${ENVIRONMENT_NAME}/${ENVIRONMENT_NAME}.d/50-${PACKAGE_NAME}.conf
     SNAPRFS_SECURE_CONFIGURATION_FILE=/etc/${ENVIRONMENT_NAME}/${ENVIRONMENT_NAME}.d/35-${PACKAGE_NAME}.conf
+    SNAPRFS_USER_CONFIGURATION_FILE=/etc/${ENVIRONMENT_NAME}/${ENVIRONMENT_NAME}.d/50-${PACKAGE_NAME}.conf
+
+    if test ! -f ${SNAPRFS_SECURE_CONFIGURATION_FILE}
+    then
+        # For the `secure_listen=...` URI, it needs to include a login name
+        # and password and because of that it needs to be secure
+        #
+        echo "# Secure variables to define in a secure configuration file" >${SNAPRFS_SECURE_CONFIGURATION_FILE}
+        echo "#" >>${SNAPRFS_SECURE_CONFIGURATION_FILE}
+        echo "# See /etc/snaprfs/snaprfs.conf for documentation" >>${SNAPRFS_SECURE_CONFIGURATION_FILE}
+        echo "#" >>${SNAPRFS_SECURE_CONFIGURATION_FILE}
+        echo "#secure_listen=" >>${SNAPRFS_SECURE_CONFIGURATION_FILE}
+
+        chmod 0700 ${SNAPRFS_SECURE_CONFIGURATION_FILE}
+        chown "${USER_NAME}":"${GROUP_NAME}" ${SNAPRFS_SECURE_CONFIGURATION_FILE}
+    fi
 
     if test ! -f ${SNAPRFS_USER_CONFIGURATION_FILE}
     then
@@ -39,21 +54,6 @@ then
         echo "#communicatord_listen=" >>${SNAPRFS_USER_CONFIGURATION_FILE}
         echo >>${SNAPRFS_USER_CONFIGURATION_FILE}
         echo "# For secure_listen, see ${SNAPRFS_SECURE_CONFIGURATION_FILE}" >>${SNAPRFS_USER_CONFIGURATION_FILE}
-    fi
-
-    if test ! -f ${SNAPRFS_SECURE_CONFIGURATION_FILE}
-    then
-        # For the `secure_listen=...` URI, it needs to include a login name
-        # and password and because of that it needs to be secure
-        #
-        echo "# Secure variables to define in a secure configuration file" >${SNAPRFS_SECURE_CONFIGURATION_FILE}
-        echo "#" >>${SNAPRFS_SECURE_CONFIGURATION_FILE}
-        echo "# See /etc/snaprfs/snaprfs.conf for documentation" >>${SNAPRFS_SECURE_CONFIGURATION_FILE}
-        echo "#" >>${SNAPRFS_SECURE_CONFIGURATION_FILE}
-        echo "#secure_listen=" >>${SNAPRFS_SECURE_CONFIGURATION_FILE}
-
-        chmod 0700 ${SNAPRFS_SECURE_CONFIGURATION_FILE}
-        chown "${USER_NAME}":"${GROUP_NAME}" ${SNAPRFS_SECURE_CONFIGURATION_FILE}
     fi
 
     # Create the directory where other services install configuration files

@@ -25,6 +25,8 @@ namespace rfs
 
 
 
+constexpr int const             REMOTE_PORT = 4044;     // rfs://<private-ip>
+constexpr int const             SECURE_PORT = 4045;     // rfss://<public-ip>
 
 
 

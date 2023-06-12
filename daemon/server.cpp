@@ -93,6 +93,7 @@
 //
 #include    <snaprfs/exception.h>
 #include    <snaprfs/names.h>
+#include    <snaprfs/rfs.h>
 #include    <snaprfs/version.h>
 
 
@@ -641,6 +642,7 @@ void server::ready()
     if(f_opts.is_defined("listen"))
     {
         edhttp::uri u;
+        u.set_port(rfs::REMOTE_PORT);
         if(!u.set_uri(f_opts.get_string("listen"), false, true))
         {
             SNAP_LOG_ERROR
@@ -678,9 +680,21 @@ void server::ready()
                 stop(false);
                 return;
             }
+            addr::addr a(ranges[0].get_from());
+            if(a.get_network_type() == addr::network_type_t::NETWORK_TYPE_PUBLIC
+            || a.get_network_type() == addr::network_type_t::NETWORK_TYPE_ANY)
+            {
+                SNAP_LOG_ERROR
+                    << "the \"listen=...\" parameter must be a local or private address. \""
+                    << f_opts.get_string("listen")
+                    << "\" is not supported."
+                    << SNAP_LOG_SEND;
+                stop(false);
+                return;
+            }
             f_data_server = std::make_shared<data_server>(
                                   this
-                                , ranges[0].get_from()
+                                , a
                                 , std::string()
                                 , std::string()
                                 , ed::mode_t::MODE_PLAIN
@@ -703,6 +717,7 @@ void server::ready()
         if(!secure_listen.empty() && !certificate.empty() && !private_key.empty())
         {
             edhttp::uri u;
+            u.set_port(rfs::SECURE_PORT);
             if(!u.set_uri(secure_listen, false, true))
             {
                 SNAP_LOG_ERROR
