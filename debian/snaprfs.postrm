@@ -10,8 +10,9 @@ then
     ENVIRONMENT_NAME=snaprfs
     PACKAGE_NAME=snaprfs
 
-    # delete the admin configuration file
+    # delete the admin configuration files
     #
+    rm -f /etc/${ENVIRONMENT_NAME}/${ENVIRONMENT_NAME}.d/35-${PACKAGE_NAME}.conf
     rm -f /etc/${ENVIRONMENT_NAME}/${ENVIRONMENT_NAME}.d/50-${PACKAGE_NAME}.conf
 
     # delete the watch-dirs from the home directory
