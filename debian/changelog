@@ -1,4 +1,4 @@
-snaprfs (1.0.0.0~bionic) bionic; urgency=high
+snaprfs (1.0.0.0~jammy) jammy; urgency=high
 
   * A Remote File System service.
 
