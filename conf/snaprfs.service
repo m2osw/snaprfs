@@ -1,4 +1,4 @@
-# SnapRFS Service
+# Communicatord Service Definition
 #
 # This file tells the communicatord that the snaprfs is a local
 # service and such a service is going to connect to it
