@@ -152,7 +152,10 @@ std::string order::flags_as_string() const
     for(auto f : f_flags)
     {
         ss << sep << f;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wrestrict"
         sep = ",";
+#pragma GCC diagnostic pop
     }
 
     return ss.str();
