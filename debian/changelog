@@ -1,3 +1,9 @@
+snaprfs (1.0.0.1~bionic) bionic; urgency=high
+
+  * Bumped build version to rebuild on Launchpad.
+
+ -- Alexis Wilke <alexis@m2osw.com>  Thu, 21 Dec 2023 21:44:02 -0800
+
 snaprfs (1.0.0.0~jammy) jammy; urgency=high
 
   * A Remote File System service.
