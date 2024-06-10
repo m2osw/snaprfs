@@ -42,7 +42,7 @@
 
 // communicatord
 //
-#include    <communicatord/communicatord.h>
+#include    <communicatord/communicator.h>
 
 
 
