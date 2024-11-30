@@ -17,20 +17,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-// self
-//
-#include    "main.h"
-
-// snaprfs lib
+// snaprfs
 //
 #include    <snaprfs/version.h>
 
 
+// self
+//
+#include    "main.h"
 
 
-CATCH_TEST_CASE("Version", "[version]")
+
+CATCH_TEST_CASE("version", "[version]")
 {
-    CATCH_START_SECTION("verify runtime vs compile time version numbers")
+    CATCH_START_SECTION("version: verify runtime vs compile time version numbers")
     {
         CATCH_REQUIRE(rfs::get_major_version()   == SNAPRFS_VERSION_MAJOR);
         CATCH_REQUIRE(rfs::get_release_version() == SNAPRFS_VERSION_MINOR);

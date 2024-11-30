@@ -27,9 +27,9 @@ find_package(SnapCatch2)
 if(SnapCatch2_FOUND)
 
     add_executable(${PROJECT_NAME}
-        main.cpp
+        catch_main.cpp
 
-        version.cpp
+        catch_version.cpp
     )
 
     target_include_directories(${PROJECT_NAME}
@@ -46,11 +46,19 @@ if(SnapCatch2_FOUND)
         ${SNAPCATCH2_LIBRARIES}
     )
 
-    add_test( unittests ${PROJECT_NAME} )
-
 else(SnapCatch2_FOUND)
 
     message("snapcatch2 not found... no test will be built.")
+
+endif(SnapCatch2_FOUND)
+
+if(SnapCatch2_FOUND)
+
+    find_package(SnapTestRunner)
+    AddUnitTestsTarget(
+        PROJECT_NAME
+            rununittests
+    )
 
 endif(SnapCatch2_FOUND)
 
