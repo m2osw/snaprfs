@@ -24,7 +24,7 @@
 
 // self
 //
-#include    "main.h"
+#include    "catch_main.h"
 
 
 

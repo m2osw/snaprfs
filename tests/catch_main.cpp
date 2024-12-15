@@ -22,20 +22,20 @@
 
 // self
 //
-#include "main.h"
+#include "catch_main.h"
 
 
-// snaprfs lib
+// snaprfs
 //
 #include <snaprfs/version.h>
 
 
-// libexcept lib
+// libexcept
 //
 #include <libexcept/exception.h>
 
 
-// C++ lib
+// C++
 //
 #include <sstream>
 
