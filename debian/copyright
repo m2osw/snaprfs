@@ -3,9 +3,9 @@ Upstream-Name: snaprfs
 Source: https://github.com/m2osw/snaprfs
 
 Files: *
-Copyright: 2019 Made to Order Software Corp. <contact@m2osw.com>
-           2019 Alexis Wilke <alexis@m2osw.com>
-           2019 R. Douglas Barbieri <doug@m2osw.com>
+Copyright: 2019-2024  Made to Order Software Corp. <contact@m2osw.com>
+           2019-2024  Alexis Wilke <alexis@m2osw.com>
+           2019-2024  R. Douglas Barbieri <doug@m2osw.com>
 License: GPL-3+
  Copyright (c) 2005-2023  Made to Order Software Corp.  All Rights Reserved
  .
