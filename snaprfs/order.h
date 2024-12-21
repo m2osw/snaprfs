@@ -17,8 +17,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
 
+/** \file
+ * \brief Snap RFS order.
+ *
+ * This files declares the order class. Orders are used to define how
+ * files are to be copied between systems. This is, in effect, the
+ * configuration management of the Snap RFS system.
+ */
 
-// libaddr lib
+
+// libaddr
 //
 #include    <libaddr/addr.h>
 

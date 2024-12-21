@@ -17,6 +17,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
 
+/** \file
+ * \brief Global definitions and functions of the Snap RFS environment.
+ *
+ * Various global declarations and functions used in the Snap RFS library.
+ */
+
 
 
 

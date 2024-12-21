@@ -2,6 +2,7 @@
 # Core Implementation (SNAP-658)
 
 * Compress the file before sending unless under X bytes
+  - use compressor implementation in edhttp
 * Make sure watch-dirs parent/child + recursive do not overlap
 * Make sure all temporary directories are not included in watch-dirs
 * Security: if the secure address is somewhat invalid it gets logged with

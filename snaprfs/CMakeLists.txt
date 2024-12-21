@@ -46,6 +46,7 @@ target_include_directories(${PROJECT_NAME}
         ${LIBADDR_INCLUDE_DIRS}
         ${LIBEXCEPT_INCLUDE_DIRS}
         ${LIBUFTF8_INCLUDE_DIRS}
+        ${SNAPDEV_INCLUDE_DIRS}
         ${SNAPLOGGER_INCLUDE_DIRS}
 )
 

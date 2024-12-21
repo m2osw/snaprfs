@@ -17,7 +17,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 /** \file
- * \brief `client` is a help class used to connect to the snaprfs.
+ * \brief `client` is a helper class used to connect to the snaprfs.
  *
  * This file is the implementation of a messenger expected to be used
  * by your clients if they don't already have their own communicatord
@@ -245,7 +245,11 @@ void client::msg_failure(ed::message & msg)
 
 msg_id_t client::set_message_id(ed::message & msg)
 {
-    ++f_message_id;
+    do
+    {
+        ++f_message_id;
+    }
+    while(f_message_id == 0);
     msg.add_parameter("msg_id", f_message_id);
     return f_message_id;
 }

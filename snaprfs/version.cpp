@@ -16,16 +16,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 /** \file
- * \brief The version of the snaprfs at compile time.
+ * \brief The version of the Snap RFS at compile time.
  *
- * This file records the snaprfs library version at compile time.
+ * This file records the Snap RFS library version at compile time.
  *
- * The `#define` give you the library version at the time you are compiling.
- * The functions allow you to retrieve the version of a dynamically linked
- * library.
+ * The `#define`s in the header file give you the library version at the
+ * time you are compiling your code.
+ *
+ * The functions, on the other hand, allow you to retrieve the version of
+ * a dynamically linked library at the time that library was compiled.
+ * This file implements those functions for the Snap RFS library.
  */
+
 
 // self
 //

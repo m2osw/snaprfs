@@ -16,6 +16,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/** \file
+ * \brief Snap RFS connection.
+ *
+ * This files implements a class used to connect to the snaprfs local client.
+ * This allows you to send orders which start copying data between system
+ * as required by your specifications.
+ */
+
 
 // self
 //

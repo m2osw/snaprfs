@@ -16,23 +16,30 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/** \file
+ * \brief Snap RFS order.
+ *
+ * This files implements the order class. An order is used to define how
+ * files are to be copied between systems.
+ */
+
 
 // self
 //
 #include    "snaprfs/order.h"
 
 
-// snaplogger lib
+// snaplogger
 //
 #include    <snaplogger/message.h>
 
 
-// snapdev lib
+// snapdev
 //
 #include    <snapdev/tokenize_string.h>
 
 
-// C++ lib
+// C++
 //
 #include    <sstream>
 
@@ -100,7 +107,7 @@ void order::add_flags(std::string const & flags)
 {
     std::vector<std::string>    names;
 
-    // break input in a list of flag name that was separated by commas
+    // break input in a list of flag names separated by commas or spaces
     //
     snapdev::tokenize_string(
           names

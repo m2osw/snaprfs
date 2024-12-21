@@ -17,6 +17,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
 
+/** \file
+ * \brief Snap RFS connection.
+ *
+ * This files declares a class used to connect to the snaprfs local client.
+ * This allows you to send orders which start copying data as required.
+ */
+
 
 // self
 //

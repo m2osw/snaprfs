@@ -84,53 +84,11 @@ advgetopt::option const g_options[] =
         , advgetopt::Help("retrieve information, such as the hostname and version, of the known snaprfs services.")
     ),
     advgetopt::define_option(
-          advgetopt::Name("list")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
-                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
-        , advgetopt::Help("list files managed by the specified snaprfs hosts.")
-    ),
-    advgetopt::define_option(
           advgetopt::Name("mode")
         , advgetopt::Flags(advgetopt::standalone_all_flags<
                       advgetopt::GETOPT_FLAG_GROUP_COMMANDS
                     , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
         , advgetopt::Help("allow the sending of otherwise unknown commands with this specific mode (0, 1, * twice separated by a colon, for example *:1 means many sources to one destination; *:* is not allowed).")
-    ),
-    advgetopt::define_option(
-          advgetopt::Name("move")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
-                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
-        , advgetopt::Help("send one or more files to a snaprfs destination and remove the sources once done.")
-    ),
-    advgetopt::define_option(
-          advgetopt::Name("ping")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
-                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
-        , advgetopt::Help("send a ping to a snaprfs service to verify that it is alive.")
-    ),
-    advgetopt::define_option(
-          advgetopt::Name("rm")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
-                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
-        , advgetopt::Help("remove one or more files.")
-    ),
-    advgetopt::define_option(
-          advgetopt::Name("stat")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
-                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
-        , advgetopt::Help("get statistics about one or more files on the snaprfs cluster.")
-    ),
-    advgetopt::define_option(
-          advgetopt::Name("stop")
-        , advgetopt::Flags(advgetopt::standalone_all_flags<
-                      advgetopt::GETOPT_FLAG_GROUP_COMMANDS
-                    , advgetopt::GETOPT_FLAG_ENVIRONMENT_VARIABLE>())
-        , advgetopt::Help("send the STOP command to a snaprfs service.")
     ),
 
     // OPTIONS
@@ -206,6 +164,26 @@ advgetopt::options_environment const g_options_environment =
     .f_configuration_directories = g_configuration_directories,
     .f_environment_flags = advgetopt::GETOPT_ENVIRONMENT_FLAG_PROCESS_SYSTEM_PARAMETERS,
     .f_help_header = "Usage: %p [--<opt>] <command> {<source>} {<destination>}\n"
+                     "\n"
+                     "where <command> is one or more of:\n"
+                     "\n"
+                     "   WARNING: this is not yet implemented! Also, the copying/deleting is\n"
+                     "            100%% implemented through our configuration files. We still\n"
+                     "            want to look into a few like the ping/stat/version/...\n"
+                     "\n"
+                     "   configuration-filenames     retrieve the filenames of configuration files\n"
+                     "   cp <sources> <destination>  copy files to a destination\n"
+                     "   dup <source> <destinations>  duplicate file to all destination\n"
+                     "   list <sources>              list files from sources\n"
+                     "   mv <sources> <destination>  move files to a destination\n"
+                     "   rm <destinations>           delete files from destinations\n"
+                     "   ping <source>               ping the server to make sure it is alive\n"
+                     "   stat <sources>              statistics from sources\n"
+                     "   stop <destination>          stop copies to destination\n"
+                     "   version                     retrieve the version from the client/server\n"
+                     "   --mode {0:0|1:0|0:1|1:1|0:*|*:0|1:*|*:1} <other-command> ...\n"
+                     "                               send <other-command> with specified mode\n"
+                     "\n"
                      "where --<opt> is one or more of:",
     .f_help_footer = "%c",
     .f_version = SNAPRFS_VERSION_STRING,
