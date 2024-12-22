@@ -93,13 +93,16 @@ messenger::messenger(server * s, advgetopt::getopt & opts)
         // the following are not yet implemented and maybe that was wrong
         // so I may not implement them (i.e. the copy of a specific set of
         // folders is safer than allowing "random" copies across all computers)
-        //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_configuration_filenames, &messenger::msg_configuration_filenames),
         //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_copy, &messenger::msg_copy),
         //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_duplicate, &messenger::msg_duplicate),
-        //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_list, &messenger::msg_list),
         //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_move, &messenger::msg_move),
-        //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_ping, &messenger::msg_ping),
         //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_remove, &messenger::msg_remove),
+
+        // the following is also not yet implemented, but thos I'd like to have
+        // at some point
+        //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_configuration_filenames, &messenger::msg_configuration_filenames),
+        //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_list, &messenger::msg_list),
+        //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_ping, &messenger::msg_ping),
         //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_stat, &messenger::msg_stat),
         //DISPATCHER_MATCH(snaprfs::g_name_snaprfs_cmd_rfs_version, &messenger::msg_version),
     });
