@@ -4,7 +4,7 @@ Maintainer: Alexis Wilke <alexis@m2osw.com>
 Build-Depends: cmake,
     cppthread-dev (>= 1.0.0.0~jammy),
     communicatord-dev (>= 2.0.8.1~jammy),
-    debhelper,
+    debhelper-compat (= 13),
     dh-sysuser,
     doxygen,
     edhttp-dev (>= 1.0.4.1~jammy),
