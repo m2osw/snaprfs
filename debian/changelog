@@ -1,4 +1,4 @@
-snaprfs (1.0.0.2~bionic) bionic; urgency=high
+snaprfs (1.0.1.0~noble) noble; urgency=high
 
   * Stop cleanly using ed-signal.
   * Cleaned up the tests.
