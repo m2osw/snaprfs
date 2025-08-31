@@ -17,12 +17,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-find_package(SnapDoxygen)
 
 ##
 ## Documentation
 ##
-AddDoxygenTarget(snaprfs
+project(snaprfs-documentation)
+
+find_package(SnapDoxygen)
+AddDoxygenTarget(
+    snaprfs
     ${SNAPRFS_VERSION_MAJOR}
     ${SNAPRFS_VERSION_MINOR}
     ${SNAPRFS_VERSION_PATCH}
